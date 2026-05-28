@@ -1,0 +1,174 @@
+import { router } from 'expo-router';
+import React, { useState } from 'react';
+import {
+  ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
+} from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { COLORS } from '@/constants/crowdColors';
+import { useAuth } from '@/context/AuthContext';
+
+export default function SignupScreen() {
+  const { signup } = useAuth();
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [focused, setFocused] = useState<string | null>(null);
+
+  async function handleSignup() {
+    if (!name.trim() || !email.trim() || !password.trim()) {
+      setError('Please fill in all fields.');
+      return;
+    }
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await signup(name.trim(), email.trim(), password);
+      router.replace('/(tabs)');
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  const inputStyle = (field: string) => [
+    styles.input,
+    focused === field && styles.inputFocused,
+  ];
+
+  return (
+    <SafeAreaView style={styles.safe}>
+      <KeyboardAvoidingView
+        style={styles.flex}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
+        <ScrollView
+          style={styles.flex}
+          contentContainerStyle={styles.container}
+          keyboardShouldPersistTaps="handled">
+          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+            <Text style={styles.backText}>‹ Back</Text>
+          </Pressable>
+
+          <View style={styles.header}>
+            <Text style={styles.heading}>Create account</Text>
+            <Text style={styles.sub}>Start sharing crowd levels with your community.</Text>
+          </View>
+
+          <View style={styles.form}>
+            {error ? <Text style={styles.error}>{error}</Text> : null}
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Full Name</Text>
+              <TextInput
+                style={inputStyle('name')}
+                value={name}
+                onChangeText={setName}
+                placeholder="Jane Smith"
+                placeholderTextColor={COLORS.textMuted}
+                autoCapitalize="words"
+                onFocus={() => setFocused('name')}
+                onBlur={() => setFocused(null)}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Email</Text>
+              <TextInput
+                style={inputStyle('email')}
+                value={email}
+                onChangeText={setEmail}
+                placeholder="you@example.com"
+                placeholderTextColor={COLORS.textMuted}
+                autoCapitalize="none"
+                keyboardType="email-address"
+                onFocus={() => setFocused('email')}
+                onBlur={() => setFocused(null)}
+              />
+            </View>
+
+            <View style={styles.field}>
+              <Text style={styles.label}>Password</Text>
+              <TextInput
+                style={inputStyle('pass')}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="Min. 6 characters"
+                placeholderTextColor={COLORS.textMuted}
+                secureTextEntry
+                onFocus={() => setFocused('pass')}
+                onBlur={() => setFocused(null)}
+              />
+            </View>
+
+            <Pressable
+              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+              onPress={handleSignup}
+              disabled={loading}>
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.buttonText}>Create Account</Text>
+              )}
+            </Pressable>
+
+            <View style={styles.loginRow}>
+              <Text style={styles.loginText}>Already have an account?</Text>
+              <Pressable onPress={() => router.replace('/(auth)/login')}>
+                <Text style={styles.loginLink}> Log in</Text>
+              </Pressable>
+            </View>
+          </View>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe: { flex: 1, backgroundColor: COLORS.bg },
+  flex: { flex: 1 },
+  container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, gap: 32 },
+  backBtn: { alignSelf: 'flex-start' },
+  backText: { color: COLORS.primary, fontSize: 17 },
+  header: { gap: 8 },
+  heading: { color: COLORS.text, fontSize: 28, fontWeight: '700' },
+  sub: { color: COLORS.textSec, fontSize: 15, lineHeight: 22 },
+  form: { gap: 16 },
+  error: { color: COLORS.packed, backgroundColor: 'rgba(239,68,68,0.1)', padding: 12, borderRadius: 10, fontSize: 14 },
+  field: { gap: 6 },
+  label: { color: COLORS.textSec, fontSize: 13, fontWeight: '500' },
+  input: {
+    backgroundColor: COLORS.inputBg,
+    borderWidth: 1,
+    borderColor: COLORS.inputBorder,
+    borderRadius: 12,
+    padding: 14,
+    color: COLORS.text,
+    fontSize: 16,
+  },
+  inputFocused: { borderColor: COLORS.primary },
+  button: {
+    backgroundColor: COLORS.primary,
+    borderRadius: 14,
+    padding: 16,
+    alignItems: 'center',
+    marginTop: 8,
+  },
+  buttonPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
+  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  loginRow: { flexDirection: 'row', justifyContent: 'center' },
+  loginText: { color: COLORS.textSec, fontSize: 14 },
+  loginLink: { color: COLORS.primary, fontSize: 14, fontWeight: '600' },
+});
