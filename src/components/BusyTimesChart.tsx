@@ -2,15 +2,24 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
 import { BUSY_HOUR_LABELS, busyLevelFromPercent, CROWD_COLORS } from '@/utils/crowdUtils';
+import type { CrowdLevel } from '@/data/mockData';
+
+// Representative chart percentages for each live crowd level
+const LIVE_CROWD_PCT: Record<CrowdLevel, number> = {
+  empty: 10,
+  light: 35,
+  moderate: 65,
+  packed: 90,
+};
 
 interface Props {
   data: number[]; // 18 values 0-100, each representing an hour 6AM-12AM
   currentHourIndex?: number; // Which hour slot is "now"
+  liveCrowd?: CrowdLevel; // Current live crowd level to overlay at the current hour
 }
 
-export default function BusyTimesChart({ data, currentHourIndex }: Props) {
+export default function BusyTimesChart({ data, currentHourIndex, liveCrowd }: Props) {
   const maxVal = Math.max(...data, 1);
-  // Show every 3rd label to avoid crowding
   const showLabel = (i: number) => i % 3 === 0;
 
   return (
@@ -23,24 +32,56 @@ export default function BusyTimesChart({ data, currentHourIndex }: Props) {
           const level = busyLevelFromPercent(val);
           const color = CROWD_COLORS[level];
           const isNow = i === currentHourIndex;
+          const liveHeight = liveCrowd
+            ? Math.max((LIVE_CROWD_PCT[liveCrowd] / maxVal) * 80, 4)
+            : 0;
 
           return (
             <View key={i} style={styles.barWrapper}>
               <View style={styles.barContainer}>
-                {isNow && <View style={[styles.nowIndicator, { backgroundColor: COLORS.primary }]} />}
+                {/* Typical historical bar — always ghosted */}
                 <View
                   style={[
                     styles.bar,
                     {
                       height: Math.max(pct * 80, val > 0 ? 4 : 0),
-                      backgroundColor: isNow ? COLORS.primary : color,
-                      opacity: val === 0 ? 0.2 : 1,
+                      backgroundColor: color,
+                      opacity: val === 0 ? 0.1 : 0.28,
                     },
                   ]}
                 />
+                {/* Live crowd overlay at current hour */}
+                {isNow && liveCrowd && (
+                  <View
+                    style={[
+                      styles.bar,
+                      styles.liveBar,
+                      {
+                        height: liveHeight,
+                        backgroundColor: CROWD_COLORS[liveCrowd],
+                      },
+                    ]}
+                  />
+                )}
+                {/* Dot above the live bar */}
+                {isNow && liveCrowd && (
+                  <View
+                    style={[
+                      styles.liveDot,
+                      {
+                        bottom: liveHeight + 5,
+                        backgroundColor: CROWD_COLORS[liveCrowd],
+                      },
+                    ]}
+                  />
+                )}
               </View>
               {showLabel(i) && (
-                <Text style={[styles.label, isNow && { color: COLORS.primary }]}>
+                <Text
+                  style={[
+                    styles.label,
+                    isNow && { color: COLORS.primary, fontWeight: '700' },
+                  ]}>
                   {BUSY_HOUR_LABELS[i]}
                 </Text>
               )}
@@ -48,13 +89,29 @@ export default function BusyTimesChart({ data, currentHourIndex }: Props) {
           );
         })}
       </View>
-      <View style={styles.legend}>
-        {(['empty', 'light', 'moderate', 'packed'] as const).map(level => (
-          <View key={level} style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: CROWD_COLORS[level] }]} />
-            <Text style={styles.legendText}>{level.charAt(0).toUpperCase() + level.slice(1)}</Text>
+
+      {/* Legend */}
+      <View style={styles.legendRow}>
+        <View style={styles.legendTypical}>
+          <View style={[styles.legendBar, { backgroundColor: COLORS.textMuted, opacity: 0.28 }]} />
+          <Text style={styles.legendText}>Typical</Text>
+        </View>
+        <View style={styles.legendDivider} />
+        {liveCrowd ? (
+          <View style={styles.legendLive}>
+            <View style={[styles.legendDot, { backgroundColor: CROWD_COLORS[liveCrowd] }]} />
+            <Text style={[styles.legendText, { color: CROWD_COLORS[liveCrowd], fontWeight: '600' }]}>
+              Live now
+            </Text>
           </View>
-        ))}
+        ) : (
+          (['empty', 'light', 'moderate', 'packed'] as const).map(l => (
+            <View key={l} style={styles.legendItem}>
+              <View style={[styles.legendDot, { backgroundColor: CROWD_COLORS[l] }]} />
+              <Text style={styles.legendText}>{l.charAt(0).toUpperCase() + l.slice(1)}</Text>
+            </View>
+          ))
+        )}
       </View>
     </View>
   );
@@ -104,12 +161,17 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     minHeight: 0,
   },
-  nowIndicator: {
+  liveBar: {
     position: 'absolute',
-    top: 0,
-    width: 2,
-    height: 4,
-    borderRadius: 1,
+    bottom: 0,
+    width: '80%',
+    borderRadius: 3,
+  },
+  liveDot: {
+    position: 'absolute',
+    width: 5,
+    height: 5,
+    borderRadius: 3,
   },
   label: {
     color: COLORS.textMuted,
@@ -117,10 +179,32 @@ const styles = StyleSheet.create({
     marginTop: 4,
     textAlign: 'center',
   },
-  legend: {
+  legendRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    alignItems: 'center',
+    gap: 10,
     marginTop: 8,
+    flexWrap: 'wrap',
+  },
+  legendTypical: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+  },
+  legendBar: {
+    width: 8,
+    height: 12,
+    borderRadius: 2,
+  },
+  legendDivider: {
+    width: 1,
+    height: 12,
+    backgroundColor: COLORS.border,
+  },
+  legendLive: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
   },
   legendItem: {
     flexDirection: 'row',

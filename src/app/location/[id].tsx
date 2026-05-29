@@ -114,7 +114,7 @@ export default function LocationDetailScreen() {
         </Pressable>
 
         {/* Busy times chart */}
-        <BusyTimesChart data={location.busyHours} currentHourIndex={currentHourIndex} />
+        <BusyTimesChart data={location.busyHours} currentHourIndex={currentHourIndex} liveCrowd={location.currentCrowd} />
 
         {/* Recent reports */}
         <View style={styles.section}>
