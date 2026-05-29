@@ -29,7 +29,7 @@ export default function LocationDetailScreen() {
 
   const photoUrl = usePlacesPhoto(location);
   const { reviews, myReview, averageRating, submitReview } = useReviews(id ?? '');
-  const claim = useBusinessClaim(id ?? '');
+  const claim = useBusinessClaim(id ?? '', location?.name, location?.address);
 
   const [showReviewForm,    setShowReviewForm]    = useState(false);
   const [showClaimModal,    setShowClaimModal]    = useState(false);
@@ -93,11 +93,15 @@ export default function LocationDetailScreen() {
                 <View style={styles.ratingBadge}>
                   <Text style={styles.ratingBadgeText}>⭐ {location.rating}</Text>
                 </View>
-                {claim.ownerInfo?.isVerified && (
+                {claim.ownerInfo?.isVerified ? (
                   <View style={styles.verifiedBadge}>
-                    <Text style={styles.verifiedText}>✓ Verified</Text>
+                    <Text style={styles.verifiedText}>✓ Verified Owner</Text>
                   </View>
-                )}
+                ) : claim.myClaimStatus === 'pending' ? (
+                  <View style={styles.pendingBadge}>
+                    <Text style={styles.pendingText}>⏳ Pending Verification</Text>
+                  </View>
+                ) : null}
               </View>
               <Text style={styles.name} numberOfLines={2}>{location.name}</Text>
               <Text style={styles.address}>📍 {location.address}</Text>
@@ -224,25 +228,15 @@ export default function LocationDetailScreen() {
           </Pressable>
         )}
 
-        {/* Claim this business */}
-        {!claim.loading && !claim.isClaimed && (
-          claim.myClaimStatus === 'pending' ? (
-            <View style={styles.claimPending}>
-              <Text style={styles.claimPendingIcon}>⏳</Text>
-              <View>
-                <Text style={styles.claimPendingTitle}>Claim pending review</Text>
-                <Text style={styles.claimPendingSub}>We'll notify you once approved.</Text>
-              </View>
-            </View>
-          ) : (
-            <Pressable
-              style={({ pressed }) => [styles.claimBtn, pressed && { opacity: 0.8 }]}
-              onPress={() => setShowClaimModal(true)}>
-              <Text style={styles.claimIcon}>🏢</Text>
-              <Text style={styles.claimText}>Claim this business</Text>
-              <Text style={styles.claimArrow}>›</Text>
-            </Pressable>
-          )
+        {/* Claim this business — only shown when no claim has been submitted */}
+        {!claim.loading && !claim.isClaimed && claim.myClaimStatus === 'none' && (
+          <Pressable
+            style={({ pressed }) => [styles.claimBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => setShowClaimModal(true)}>
+            <Text style={styles.claimIcon}>🏢</Text>
+            <Text style={styles.claimText}>Claim this business</Text>
+            <Text style={styles.claimArrow}>›</Text>
+          </Pressable>
         )}
       </ScrollView>
 
@@ -256,6 +250,7 @@ export default function LocationDetailScreen() {
       <ClaimModal
         visible={showClaimModal}
         locationName={location.name}
+        locationAddress={location.address}
         onClose={() => setShowClaimModal(false)}
         onSubmit={claim.submitClaim}
       />
@@ -291,6 +286,8 @@ const styles = StyleSheet.create({
   ratingBadgeText: { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
   verifiedBadge:   { backgroundColor: COLORS.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: COLORS.primary + '50' },
   verifiedText:    { color: COLORS.primary, fontSize: 11, fontWeight: '700' },
+  pendingBadge:    { backgroundColor: '#F59E0B18', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: '#F59E0B50' },
+  pendingText:     { color: '#F59E0B', fontSize: 11, fontWeight: '700' },
   name:            { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
   address:         { color: COLORS.textSec, fontSize: 13 },
   description:     { color: COLORS.textSec, fontSize: 14, lineHeight: 20, marginTop: 4 },
