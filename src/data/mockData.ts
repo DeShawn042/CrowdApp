@@ -1,6 +1,18 @@
 export type CrowdLevel = 'empty' | 'light' | 'moderate' | 'packed';
 export type LocationType = 'gym' | 'bar' | 'restaurant';
 
+export interface Review {
+  id: string;
+  locationId: string;
+  userId: string;
+  userName: string;
+  rating: number;
+  content: string;
+  createdAt: string;
+  updatedAt: string;
+  photos: string[];
+}
+
 export interface Location {
   id: string;
   name: string;
@@ -18,6 +30,8 @@ export interface Location {
   // Optional Google Places photo URL (fetched at runtime if absent)
   photoUrl?: string;
   placeId?: string;
+  // Cached average star rating (populated at runtime from Supabase)
+  averageRating?: number;
 }
 
 export interface Report {

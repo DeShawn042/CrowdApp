@@ -40,6 +40,13 @@
     "plugins": [
       "expo-router",
       [
+        "expo-image-picker",
+        {
+          "photosPermission": "CrowdApp needs access to your photos to attach them to reviews.",
+          "cameraPermission": "CrowdApp needs access to your camera to take photos for reviews."
+        }
+      ],
+      [
         "expo-splash-screen",
         {
           "backgroundColor": "#0F0F13",

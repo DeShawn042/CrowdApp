@@ -3,6 +3,7 @@ import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Location } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
+import { useReviews } from '@/hooks/useReviews';
 import CrowdLevelBadge from './CrowdLevelBadge';
 import LocationPhoto from './LocationPhoto';
 
@@ -13,7 +14,8 @@ interface Props {
 }
 
 export default function LocationCard({ location, onPress, showDistance = true }: Props) {
-  const photoUrl = usePlacesPhoto(location);
+  const photoUrl       = usePlacesPhoto(location);
+  const { averageRating } = useReviews(location.id);
 
   return (
     <Pressable
@@ -29,6 +31,9 @@ export default function LocationCard({ location, onPress, showDistance = true }:
             <Text style={styles.reportCount}>
               {location.reportCount} {location.reportCount === 1 ? 'report' : 'reports'}
             </Text>
+          )}
+          {averageRating !== null && (
+            <Text style={styles.rating}>⭐ {averageRating.toFixed(1)}</Text>
           )}
         </View>
       </View>
@@ -51,44 +56,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
   },
-  pressed: {
-    opacity: 0.75,
-    transform: [{ scale: 0.99 }],
-  },
-  info: {
-    flex: 1,
-    gap: 4,
-  },
-  name: {
-    color: COLORS.text,
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  address: {
-    color: COLORS.textSec,
-    fontSize: 12,
-  },
-  meta: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-    marginTop: 2,
-  },
-  reportCount: {
-    color: COLORS.textMuted,
-    fontSize: 11,
-  },
-  right: {
-    alignItems: 'flex-end',
-    gap: 4,
-  },
-  distance: {
-    color: COLORS.textSec,
-    fontSize: 12,
-    fontWeight: '500',
-  },
-  chevron: {
-    color: COLORS.textMuted,
-    fontSize: 20,
-  },
+  pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
+  info:    { flex: 1, gap: 4 },
+  name:    { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  address: { color: COLORS.textSec, fontSize: 12 },
+  meta:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },
+  reportCount: { color: COLORS.textMuted, fontSize: 11 },
+  rating:  { color: '#F59E0B', fontSize: 11, fontWeight: '600' },
+  right:   { alignItems: 'flex-end', gap: 4 },
+  distance: { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
+  chevron: { color: COLORS.textMuted, fontSize: 20 },
 });
