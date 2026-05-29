@@ -1,19 +1,23 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusyTimesChart from '@/components/BusyTimesChart';
+import ClaimModal from '@/components/ClaimModal';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import LocationPhoto from '@/components/LocationPhoto';
+import OwnerResponseModal from '@/components/OwnerResponseModal';
 import ReportCard from '@/components/ReportCard';
 import ReviewCard from '@/components/ReviewCard';
 import ReviewForm from '@/components/ReviewForm';
 import StarRating from '@/components/StarRating';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
+import { useBusinessClaim } from '@/hooks/useBusinessClaim';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { useReviews } from '@/hooks/useReviews';
 import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
+import type { Review } from '@/data/mockData';
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -25,8 +29,11 @@ export default function LocationDetailScreen() {
 
   const photoUrl = usePlacesPhoto(location);
   const { reviews, myReview, averageRating, submitReview } = useReviews(id ?? '');
+  const claim = useBusinessClaim(id ?? '');
 
-  const [showReviewForm, setShowReviewForm] = useState(false);
+  const [showReviewForm,    setShowReviewForm]    = useState(false);
+  const [showClaimModal,    setShowClaimModal]    = useState(false);
+  const [respondTarget,     setRespondTarget]     = useState<Review | null>(null);
 
   const currentHourIndex = useMemo(() => {
     const h = new Date().getHours();
@@ -34,6 +41,14 @@ export default function LocationDetailScreen() {
     if (h > 23) return 17;
     return Math.min(h - 6, 17);
   }, []);
+
+  async function handleShare() {
+    if (!location) return;
+    await Share.share({
+      message: `It's ${CROWD_LABELS[location.currentCrowd]} at ${location.name} right now! Check CrowdApp to plan your visit 📱`,
+      title: `${location.name} — CrowdApp`,
+    });
+  }
 
   if (!location) {
     return (
@@ -58,9 +73,14 @@ export default function LocationDetailScreen() {
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
           <Text style={styles.backText}>‹ Back</Text>
         </Pressable>
-        <Pressable onPress={() => toggleSaved(location.id)} hitSlop={12}>
-          <Text style={styles.saveIcon}>{isSaved ? '🔖' : '📌'}</Text>
-        </Pressable>
+        <View style={styles.headerActions}>
+          <Pressable onPress={handleShare} hitSlop={12}>
+            <Text style={styles.headerIcon}>📤</Text>
+          </Pressable>
+          <Pressable onPress={() => toggleSaved(location.id)} hitSlop={12}>
+            <Text style={styles.headerIcon}>{isSaved ? '❤️' : '🤍'}</Text>
+          </Pressable>
+        </View>
       </View>
 
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -69,8 +89,15 @@ export default function LocationDetailScreen() {
           <View style={styles.nameRow}>
             <LocationPhoto type={location.type} photoUrl={photoUrl} size={72} borderRadius={16} />
             <View style={styles.nameCol}>
-              <View style={styles.ratingBadge}>
-                <Text style={styles.ratingBadgeText}>⭐ {location.rating}</Text>
+              <View style={styles.badgeRow}>
+                <View style={styles.ratingBadge}>
+                  <Text style={styles.ratingBadgeText}>⭐ {location.rating}</Text>
+                </View>
+                {claim.ownerInfo?.isVerified && (
+                  <View style={styles.verifiedBadge}>
+                    <Text style={styles.verifiedText}>✓ Verified</Text>
+                  </View>
+                )}
               </View>
               <Text style={styles.name} numberOfLines={2}>{location.name}</Text>
               <Text style={styles.address}>📍 {location.address}</Text>
@@ -146,12 +173,11 @@ export default function LocationDetailScreen() {
             {averageRating !== null && (
               <View style={styles.avgRow}>
                 <StarRating rating={averageRating} size={14} />
-                <Text style={styles.avgText}>{averageRating.toFixed(1)}  ({reviews.length})</Text>
+                <Text style={styles.avgText}>{averageRating.toFixed(1)} ({reviews.length})</Text>
               </View>
             )}
           </View>
 
-          {/* Write / Edit review button */}
           <Pressable
             style={({ pressed }) => [styles.writeReviewBtn, pressed && { opacity: 0.8 }]}
             onPress={() => setShowReviewForm(true)}>
@@ -169,70 +195,147 @@ export default function LocationDetailScreen() {
           ) : (
             <View style={styles.listCard}>
               {reviews.map(r => (
-                <ReviewCard key={r.id} review={r} isOwn={r.userId === 'u1'} />
+                <View key={r.id}>
+                  <ReviewCard review={r} isOwn={r.userId === 'u1'} />
+                  {/* Owner respond button — only visible to the verified owner */}
+                  {claim.isCurrentUserOwner && (
+                    <Pressable
+                      style={styles.respondBtn}
+                      onPress={() => setRespondTarget(r)}>
+                      <Text style={styles.respondTxt}>
+                        {r.ownerResponse ? '✏️ Edit response' : '↩ Respond as owner'}
+                      </Text>
+                    </Pressable>
+                  )}
+                </View>
               ))}
             </View>
           )}
         </View>
+
+        {/* Owner dashboard shortcut */}
+        {claim.isCurrentUserOwner && (
+          <Pressable
+            style={({ pressed }) => [styles.dashBtn, pressed && { opacity: 0.8 }]}
+            onPress={() => router.push(`/dashboard/${id}`)}>
+            <Text style={styles.dashIcon}>📊</Text>
+            <Text style={styles.dashText}>View owner dashboard</Text>
+            <Text style={styles.dashArrow}>›</Text>
+          </Pressable>
+        )}
+
+        {/* Claim this business */}
+        {!claim.loading && !claim.isClaimed && (
+          claim.myClaimStatus === 'pending' ? (
+            <View style={styles.claimPending}>
+              <Text style={styles.claimPendingIcon}>⏳</Text>
+              <View>
+                <Text style={styles.claimPendingTitle}>Claim pending review</Text>
+                <Text style={styles.claimPendingSub}>We'll notify you once approved.</Text>
+              </View>
+            </View>
+          ) : (
+            <Pressable
+              style={({ pressed }) => [styles.claimBtn, pressed && { opacity: 0.8 }]}
+              onPress={() => setShowClaimModal(true)}>
+              <Text style={styles.claimIcon}>🏢</Text>
+              <Text style={styles.claimText}>Claim this business</Text>
+              <Text style={styles.claimArrow}>›</Text>
+            </Pressable>
+          )
+        )}
       </ScrollView>
 
-      {/* Review form modal */}
+      {/* Modals */}
       <ReviewForm
         visible={showReviewForm}
         onClose={() => setShowReviewForm(false)}
         existingReview={myReview}
         onSubmit={submitReview}
       />
+      <ClaimModal
+        visible={showClaimModal}
+        locationName={location.name}
+        onClose={() => setShowClaimModal(false)}
+        onSubmit={claim.submitClaim}
+      />
+      {respondTarget && (
+        <OwnerResponseModal
+          visible={!!respondTarget}
+          reviewerName={respondTarget.userName}
+          existingResponse={respondTarget.ownerResponse}
+          onClose={() => setRespondTarget(null)}
+          onSubmit={content => claim.submitOwnerResponse(respondTarget.id, content)}
+        />
+      )}
     </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
-  safe:          { flex: 1, backgroundColor: COLORS.bg },
-  header:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
-  backBtn:       { paddingVertical: 4 },
-  backText:      { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  saveIcon:      { fontSize: 22 },
-  scroll:        { flex: 1 },
-  content:       { padding: 20, paddingTop: 0, gap: 20, paddingBottom: 60 },
-  notFound:      { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  notFoundText:  { color: COLORS.textSec, fontSize: 16 },
-  infoSection:   { gap: 10 },
-  nameRow:       { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
-  nameCol:       { flex: 1, gap: 4, justifyContent: 'center' },
-  ratingBadge:   { alignSelf: 'flex-start', backgroundColor: COLORS.card, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border },
+  safe:            { flex: 1, backgroundColor: COLORS.bg },
+  header:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn:         { paddingVertical: 4 },
+  backText:        { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
+  headerActions:   { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  headerIcon:      { fontSize: 22 },
+  scroll:          { flex: 1 },
+  content:         { padding: 20, paddingTop: 0, gap: 20, paddingBottom: 60 },
+  notFound:        { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  notFoundText:    { color: COLORS.textSec, fontSize: 16 },
+  infoSection:     { gap: 10 },
+  nameRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  nameCol:         { flex: 1, gap: 4, justifyContent: 'center' },
+  badgeRow:        { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  ratingBadge:     { alignSelf: 'flex-start', backgroundColor: COLORS.card, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border },
   ratingBadgeText: { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
-  name:          { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
-  address:       { color: COLORS.textSec, fontSize: 13 },
-  description:   { color: COLORS.textSec, fontSize: 14, lineHeight: 20, marginTop: 4 },
-  hoursRow:      { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
-  hours:         { color: COLORS.textMuted, fontSize: 13 },
-  distance:      { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
-  crowdCard:     { borderRadius: 20, padding: 20, gap: 12, borderWidth: 1 },
-  crowdHeader:   { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  crowdTitle:    { color: COLORS.text, fontSize: 16, fontWeight: '700' },
-  reportCount:   { color: COLORS.textMuted, fontSize: 12 },
-  crowdLevelRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
-  crowdDot:      { width: 16, height: 16, borderRadius: 8 },
-  crowdLevelText: { fontSize: 28, fontWeight: '800' },
-  crowdMeter:    { flexDirection: 'row', gap: 3 },
-  meterSegment:  { flex: 1, height: 8, opacity: 0.35 },
-  meterActive:   { opacity: 1 },
-  reportBtn:     { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '50', borderStyle: 'dashed' },
+  verifiedBadge:   { backgroundColor: COLORS.primary + '20', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: COLORS.primary + '50' },
+  verifiedText:    { color: COLORS.primary, fontSize: 11, fontWeight: '700' },
+  name:            { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
+  address:         { color: COLORS.textSec, fontSize: 13 },
+  description:     { color: COLORS.textSec, fontSize: 14, lineHeight: 20, marginTop: 4 },
+  hoursRow:        { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
+  hours:           { color: COLORS.textMuted, fontSize: 13 },
+  distance:        { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
+  crowdCard:       { borderRadius: 20, padding: 20, gap: 12, borderWidth: 1 },
+  crowdHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  crowdTitle:      { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+  reportCount:     { color: COLORS.textMuted, fontSize: 12 },
+  crowdLevelRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  crowdDot:        { width: 16, height: 16, borderRadius: 8 },
+  crowdLevelText:  { fontSize: 28, fontWeight: '800' },
+  crowdMeter:      { flexDirection: 'row', gap: 3 },
+  meterSegment:    { flex: 1, height: 8, opacity: 0.35 },
+  meterActive:     { opacity: 1 },
+  reportBtn:       { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '50', borderStyle: 'dashed' },
   reportBtnPressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
-  reportBtnIcon: { fontSize: 22 },
-  reportBtnText: { flex: 1, color: COLORS.primary, fontSize: 16, fontWeight: '600' },
-  reportBtnArrow: { color: COLORS.primary, fontSize: 22 },
-  section:       { gap: 14 },
-  sectionHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  sectionTitle:  { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  avgRow:        { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  avgText:       { color: COLORS.textMuted, fontSize: 12 },
-  writeReviewBtn: { backgroundColor: COLORS.card, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary + '50', borderStyle: 'dashed' },
+  reportBtnIcon:   { fontSize: 22 },
+  reportBtnText:   { flex: 1, color: COLORS.primary, fontSize: 16, fontWeight: '600' },
+  reportBtnArrow:  { color: COLORS.primary, fontSize: 22 },
+  section:         { gap: 14 },
+  sectionHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+  sectionTitle:    { color: COLORS.text, fontSize: 18, fontWeight: '700' },
+  avgRow:          { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  avgText:         { color: COLORS.textMuted, fontSize: 12 },
+  writeReviewBtn:  { backgroundColor: COLORS.card, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary + '50', borderStyle: 'dashed' },
   writeReviewText: { color: COLORS.primary, fontSize: 15, fontWeight: '600' },
-  listCard:      { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border },
-  emptyCard:     { alignItems: 'center', paddingVertical: 32, gap: 8 },
-  emptyEmoji:    { fontSize: 40 },
-  emptyTitle:    { color: COLORS.textSec, fontSize: 16, fontWeight: '600' },
-  emptySub:      { color: COLORS.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  listCard:        { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border },
+  emptyCard:       { alignItems: 'center', paddingVertical: 32, gap: 8 },
+  emptyEmoji:      { fontSize: 40 },
+  emptyTitle:      { color: COLORS.textSec, fontSize: 16, fontWeight: '600' },
+  emptySub:        { color: COLORS.textMuted, fontSize: 13, textAlign: 'center', lineHeight: 18 },
+  respondBtn:      { paddingHorizontal: 16, paddingVertical: 8, marginTop: -6, marginBottom: 8 },
+  respondTxt:      { color: COLORS.primary, fontSize: 13, fontWeight: '500' },
+  dashBtn:         { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '40' },
+  dashIcon:        { fontSize: 22 },
+  dashText:        { flex: 1, color: COLORS.primary, fontSize: 16, fontWeight: '600' },
+  dashArrow:       { color: COLORS.primary, fontSize: 22 },
+  claimBtn:        { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
+  claimIcon:       { fontSize: 22 },
+  claimText:       { flex: 1, color: COLORS.textSec, fontSize: 16, fontWeight: '600' },
+  claimArrow:      { color: COLORS.textMuted, fontSize: 22 },
+  claimPending:    { backgroundColor: '#F59E0B15', borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: '#F59E0B40' },
+  claimPendingIcon: { fontSize: 24 },
+  claimPendingTitle: { color: '#F59E0B', fontSize: 15, fontWeight: '700' },
+  claimPendingSub: { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
 });

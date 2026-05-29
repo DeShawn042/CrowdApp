@@ -33,6 +33,14 @@ export default function ReviewCard({ review, isOwn = false }: Props) {
         <Text style={styles.date}>{formatDate(review.updatedAt || review.createdAt)}</Text>
       </View>
       <Text style={styles.content}>{review.content}</Text>
+      {review.ownerResponse && (
+        <View style={styles.ownerResponse}>
+          <View style={styles.ownerBadge}>
+            <Text style={styles.ownerBadgeTxt}>✓ Owner</Text>
+          </View>
+          <Text style={styles.ownerResponseTxt}>{review.ownerResponse}</Text>
+        </View>
+      )}
       {review.photos.length > 0 && (
         <ScrollView
           horizontal
@@ -70,6 +78,10 @@ const styles = StyleSheet.create({
   name: { color: COLORS.text, fontSize: 14, fontWeight: '600' },
   date: { color: COLORS.textMuted, fontSize: 11 },
   content: { color: COLORS.textSec, fontSize: 14, lineHeight: 20 },
-  photosRow: { paddingBottom: 4, gap: 8 },
-  photo: { width: 88, height: 88, borderRadius: 10, backgroundColor: COLORS.surface },
+  photosRow:         { paddingBottom: 4, gap: 8 },
+  photo:             { width: 88, height: 88, borderRadius: 10, backgroundColor: COLORS.surface },
+  ownerResponse:     { backgroundColor: COLORS.primary + '12', borderRadius: 12, padding: 12, gap: 6, borderLeftWidth: 3, borderLeftColor: COLORS.primary },
+  ownerBadge:        { alignSelf: 'flex-start', backgroundColor: COLORS.primary + '25', paddingHorizontal: 8, paddingVertical: 3, borderRadius: 8 },
+  ownerBadgeTxt:     { color: COLORS.primary, fontSize: 11, fontWeight: '700' },
+  ownerResponseTxt:  { color: COLORS.textSec, fontSize: 13, lineHeight: 19 },
 });

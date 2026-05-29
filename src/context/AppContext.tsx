@@ -1,4 +1,4 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import {
   CrowdLevel,
   Location,
@@ -65,8 +65,22 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [locations, setLocations] = useState<Location[]>(MOCK_LOCATIONS);
   const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
   const [myReports, setMyReports] = useState<Report[]>(MY_REPORTS);
-  const [savedLocationIds, setSavedLocationIds] = useState<string[]>(['1', '3']);
+  const [savedLocationIds, setSavedLocationIds] = useState<string[]>([]);
   const [recentLocationIds, setRecentLocationIds] = useState<string[]>(['1', '3', '2']);
+
+  // Load favorites from Supabase on mount
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+    supabase
+      .from('user_favorites')
+      .select('location_id')
+      .eq('user_id', 'u1')
+      .then(({ data }) => {
+        if (data && data.length > 0) {
+          setSavedLocationIds(data.map((f: { location_id: string }) => f.location_id));
+        }
+      });
+  }, []);
 
   const getLocationById = useCallback(
     (id: string) => locations.find(l => l.id === id),
@@ -130,9 +144,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   );
 
   const toggleSaved = useCallback((id: string) => {
-    setSavedLocationIds(prev =>
-      prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]
-    );
+    setSavedLocationIds(prev => {
+      const isSaved = prev.includes(id);
+      if (isSupabaseConfigured) {
+        if (isSaved) {
+          supabase.from('user_favorites').delete().eq('user_id', 'u1').eq('location_id', id);
+        } else {
+          supabase.from('user_favorites').insert({ user_id: 'u1', location_id: id });
+        }
+      }
+      return isSaved ? prev.filter(x => x !== id) : [...prev, id];
+    });
   }, []);
 
   const addRecentLocation = useCallback((id: string) => {

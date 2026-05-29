@@ -34,6 +34,7 @@ function mapRow(r: any): Review {
     createdAt: r.created_at,
     updatedAt: r.updated_at,
     photos: (r.review_photos ?? []).map((p: any) => p.storage_url),
+    ownerResponse: r.review_responses?.[0]?.content ?? undefined,
   };
 }
 
@@ -60,7 +61,7 @@ export function useReviews(locationId: string) {
 
     const { data, error: err } = await supabase
       .from('reviews')
-      .select('id, location_id, user_id, user_name, rating, content, created_at, updated_at, review_photos(storage_url)')
+      .select('id, location_id, user_id, user_name, rating, content, created_at, updated_at, review_photos(storage_url), review_responses(content)')
       .eq('location_id', locationId)
       .order('created_at', { ascending: false });
 

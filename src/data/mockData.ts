@@ -11,6 +11,7 @@ export interface Review {
   createdAt: string;
   updatedAt: string;
   photos: string[];
+  ownerResponse?: string; // owner reply, if any
 }
 
 export interface Location {

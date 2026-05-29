@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Location } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
+import { useAppContext } from '@/context/AppContext';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { useReviews } from '@/hooks/useReviews';
 import CrowdLevelBadge from './CrowdLevelBadge';
@@ -14,8 +15,11 @@ interface Props {
 }
 
 export default function LocationCard({ location, onPress, showDistance = true }: Props) {
-  const photoUrl       = usePlacesPhoto(location);
-  const { averageRating } = useReviews(location.id);
+  const { savedLocationIds, toggleSaved } = useAppContext();
+  const isFavorite = savedLocationIds.includes(location.id);
+  const photoUrl = usePlacesPhoto(location);
+  const { averageRating, reviews } = useReviews(location.id);
+  const reviewCount = reviews.length;
 
   return (
     <Pressable
@@ -23,7 +27,18 @@ export default function LocationCard({ location, onPress, showDistance = true }:
       onPress={onPress}>
       <LocationPhoto type={location.type} photoUrl={photoUrl} size={48} borderRadius={14} />
       <View style={styles.info}>
-        <Text style={styles.name} numberOfLines={1}>{location.name}</Text>
+        <View style={styles.nameRow}>
+          <Text style={styles.name} numberOfLines={1}>{location.name}</Text>
+          {averageRating !== null ? (
+            <View style={styles.starPill}>
+              <Text style={styles.starChar}>⭐</Text>
+              <Text style={styles.starValue}>{averageRating.toFixed(1)}</Text>
+              <Text style={styles.reviewCount}>({reviewCount})</Text>
+            </View>
+          ) : (
+            <Text style={styles.noReviews}>0 reviews</Text>
+          )}
+        </View>
         <Text style={styles.address} numberOfLines={1}>{location.address}</Text>
         <View style={styles.meta}>
           <CrowdLevelBadge level={location.currentCrowd} size="sm" />
@@ -32,12 +47,12 @@ export default function LocationCard({ location, onPress, showDistance = true }:
               {location.reportCount} {location.reportCount === 1 ? 'report' : 'reports'}
             </Text>
           )}
-          {averageRating !== null && (
-            <Text style={styles.rating}>⭐ {averageRating.toFixed(1)}</Text>
-          )}
         </View>
       </View>
       <View style={styles.right}>
+        <Pressable onPress={() => toggleSaved(location.id)} hitSlop={10} style={styles.heartBtn}>
+          <Text style={styles.heartIcon}>{isFavorite ? '❤️' : '🤍'}</Text>
+        </Pressable>
         {showDistance && <Text style={styles.distance}>{location.distance}</Text>}
         <Text style={styles.chevron}>›</Text>
       </View>
@@ -57,13 +72,20 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   pressed: { opacity: 0.75, transform: [{ scale: 0.99 }] },
-  info:    { flex: 1, gap: 4 },
-  name:    { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  address: { color: COLORS.textSec, fontSize: 12 },
-  meta:    { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },
+  info:      { flex: 1, gap: 4 },
+  nameRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  name:      { color: COLORS.text, fontSize: 16, fontWeight: '600', flex: 1 },
+  starPill:    { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#F59E0B18', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  starChar:    { fontSize: 11 },
+  starValue:   { color: '#F59E0B', fontSize: 12, fontWeight: '700' },
+  reviewCount: { color: COLORS.textMuted, fontSize: 11 },
+  noReviews:   { color: COLORS.textMuted, fontSize: 11 },
+  address:   { color: COLORS.textSec, fontSize: 12 },
+  meta:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },
   reportCount: { color: COLORS.textMuted, fontSize: 11 },
-  rating:  { color: '#F59E0B', fontSize: 11, fontWeight: '600' },
-  right:   { alignItems: 'flex-end', gap: 4 },
+  right:     { alignItems: 'flex-end', gap: 4 },
+  heartBtn:  { padding: 2 },
+  heartIcon: { fontSize: 18 },
   distance: { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
   chevron: { color: COLORS.textMuted, fontSize: 20 },
 });
