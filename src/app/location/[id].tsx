@@ -4,16 +4,13 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusyTimesChart from '@/components/BusyTimesChart';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
+import LocationPhoto from '@/components/LocationPhoto';
 import ReportCard from '@/components/ReportCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
+import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
 
-const TYPE_ICONS: Record<string, string> = {
-  gym: '🏋️',
-  bar: '🍺',
-  restaurant: '🍽️',
-};
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -22,6 +19,8 @@ export default function LocationDetailScreen() {
   const location = getLocationById(id ?? '');
   const reports = getReportsForLocation(id ?? '');
   const isSaved = savedLocationIds.includes(id ?? '');
+
+  const photoUrl = usePlacesPhoto(location);
 
   const currentHourIndex = useMemo(() => {
     const h = new Date().getHours();
@@ -61,14 +60,16 @@ export default function LocationDetailScreen() {
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         {/* Location info */}
         <View style={styles.infoSection}>
-          <View style={styles.iconRow}>
-            <Text style={styles.typeIcon}>{TYPE_ICONS[location.type]}</Text>
-            <View style={[styles.ratingBadge]}>
-              <Text style={styles.ratingText}>⭐ {location.rating}</Text>
+          <View style={styles.nameRow}>
+            <LocationPhoto type={location.type} photoUrl={photoUrl} size={72} borderRadius={16} />
+            <View style={styles.nameCol}>
+              <View style={styles.ratingBadge}>
+                <Text style={styles.ratingText}>⭐ {location.rating}</Text>
+              </View>
+              <Text style={styles.name} numberOfLines={2}>{location.name}</Text>
+              <Text style={styles.address}>📍 {location.address}</Text>
             </View>
           </View>
-          <Text style={styles.name}>{location.name}</Text>
-          <Text style={styles.address}>📍 {location.address}</Text>
           <Text style={styles.description}>{location.description}</Text>
           <View style={styles.hoursRow}>
             <Text style={styles.hours}>🕐 {location.hours}</Text>
@@ -148,13 +149,13 @@ const styles = StyleSheet.create({
   content: { padding: 20, paddingTop: 0, gap: 20, paddingBottom: 40 },
   notFound: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFoundText: { color: COLORS.textSec, fontSize: 16 },
-  infoSection: { gap: 8 },
-  iconRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  typeIcon: { fontSize: 40 },
-  ratingBadge: { backgroundColor: COLORS.card, paddingHorizontal: 10, paddingVertical: 5, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border },
-  ratingText: { color: COLORS.textSec, fontSize: 13, fontWeight: '500' },
-  name: { color: COLORS.text, fontSize: 26, fontWeight: '800', lineHeight: 32 },
-  address: { color: COLORS.textSec, fontSize: 14 },
+  infoSection: { gap: 10 },
+  nameRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
+  nameCol: { flex: 1, gap: 4, justifyContent: 'center' },
+  ratingBadge: { alignSelf: 'flex-start', backgroundColor: COLORS.card, paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: COLORS.border },
+  ratingText: { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
+  name: { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
+  address: { color: COLORS.textSec, fontSize: 13 },
   description: { color: COLORS.textSec, fontSize: 14, lineHeight: 20, marginTop: 4 },
   hoursRow: { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   hours: { color: COLORS.textMuted, fontSize: 13 },

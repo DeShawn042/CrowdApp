@@ -2,13 +2,9 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Location } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
+import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import CrowdLevelBadge from './CrowdLevelBadge';
-
-const TYPE_ICONS: Record<string, string> = {
-  gym: '🏋️',
-  bar: '🍺',
-  restaurant: '🍽️',
-};
+import LocationPhoto from './LocationPhoto';
 
 interface Props {
   location: Location;
@@ -17,15 +13,13 @@ interface Props {
 }
 
 export default function LocationCard({ location, onPress, showDistance = true }: Props) {
-  const icon = TYPE_ICONS[location.type];
+  const photoUrl = usePlacesPhoto(location);
 
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={onPress}>
-      <View style={styles.iconContainer}>
-        <Text style={styles.icon}>{icon}</Text>
-      </View>
+      <LocationPhoto type={location.type} photoUrl={photoUrl} size={48} borderRadius={14} />
       <View style={styles.info}>
         <Text style={styles.name} numberOfLines={1}>{location.name}</Text>
         <Text style={styles.address} numberOfLines={1}>{location.address}</Text>
@@ -60,17 +54,6 @@ const styles = StyleSheet.create({
   pressed: {
     opacity: 0.75,
     transform: [{ scale: 0.99 }],
-  },
-  iconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 14,
-    backgroundColor: COLORS.surface,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  icon: {
-    fontSize: 24,
   },
   info: {
     flex: 1,

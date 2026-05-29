@@ -15,6 +15,9 @@ export interface Location {
   description: string;
   // Busyness 0-100 for hours 6AM–12AM (18 slots)
   busyHours: number[];
+  // Optional Google Places photo URL (fetched at runtime if absent)
+  photoUrl?: string;
+  placeId?: string;
 }
 
 export interface Report {
