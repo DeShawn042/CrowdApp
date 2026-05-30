@@ -1,11 +1,20 @@
+import * as ExpoLocation from 'expo-location';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { CrowdLevel, Location, MOCK_LOCATIONS, Report } from '@/data/mockData';
+import { CrowdLevel, Location, Report } from '@/data/mockData';
 import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import { averageReports } from '@/utils/crowdUtils';
+import { searchNearby } from '@/utils/googlePlaces';
+import { averageReports, busyLevelFromPercent } from '@/utils/crowdUtils';
+
+interface UserLocation {
+  lat: number;
+  lng: number;
+}
 
 interface AppContextValue {
   locations: Location[];
+  locationsLoading: boolean;
+  userLocation: UserLocation | null;
   reports: Report[];
   myReports: Report[];
   savedLocationIds: string[];
@@ -15,6 +24,8 @@ interface AppContextValue {
   submitReport: (locationId: string, level: CrowdLevel, comment?: string) => Promise<void>;
   toggleSaved: (id: string) => void;
   addRecentLocation: (id: string) => void;
+  /** Merge a location into the shared store so the detail screen can find it. */
+  registerLocation: (location: Location) => void;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -69,21 +80,20 @@ async function getOutlierFlag(locationId: string, userId: string, level: CrowdLe
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  // Derive user identity directly from AuthContext so timing is always correct
   const { user } = useAuth();
   const userId   = user?.id   ?? null;
   const userName = user?.name ?? 'User';
 
-  const [locations,       setLocations]       = useState<Location[]>(MOCK_LOCATIONS);
-  // Start empty — populated from Supabase, not mock data
-  const [reports,         setReports]         = useState<Report[]>([]);
-  const [myReports,       setMyReports]       = useState<Report[]>([]);
-  const [savedLocationIds, setSavedLocationIds] = useState<string[]>([]);
+  const [locations,         setLocations]         = useState<Location[]>([]);
+  const [locationsLoading,  setLocationsLoading]  = useState(true);
+  const [userLocation,      setUserLocation]      = useState<UserLocation | null>(null);
+  const [reports,           setReports]           = useState<Report[]>([]);
+  const [myReports,         setMyReports]         = useState<Report[]>([]);
+  const [savedLocationIds,  setSavedLocationIds]  = useState<string[]>([]);
   const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
 
   // ── Loaders ────────────────────────────────────────────────
 
-  /** Recent reports from ALL users (last 60 min). Used for location detail cards. */
   const loadRecentReports = useCallback(async () => {
     if (!isSupabaseConfigured) return;
     const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
@@ -99,14 +109,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const mapped = (data ?? []).map(mapRow);
     setReports(mapped);
 
-    // Update each location's current crowd level from live data
+    const hourIdx = Math.min(Math.max(new Date().getHours() - 6, 0), 17);
     setLocations(locs => locs.map(l => {
       const locReports = mapped.filter(r => r.locationId === l.id);
-      return locReports.length > 0 ? { ...l, currentCrowd: averageReports(locReports) } : l;
+      if (locReports.length > 0) return { ...l, currentCrowd: averageReports(locReports) };
+      // Only update typical for open places that have a meaningful type pattern.
+      // Closed places and 'other' types show no crowd data in the UI — don't write
+      // a misleading level into currentCrowd for them.
+      if (l.openNow !== false && l.type !== 'other') {
+        return { ...l, currentCrowd: busyLevelFromPercent(l.busyHours[hourIdx] ?? 0) };
+      }
+      return l;
     }));
   }, []);
 
-  /** Current user's full report history (all time). Used on profile screen. */
   const loadMyReports = useCallback(async (uid: string) => {
     if (!isSupabaseConfigured) return;
     const { data, error } = await supabase
@@ -120,7 +136,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setMyReports((data ?? []).map(mapRow));
   }, []);
 
-  /** Current user's saved/hearted locations. */
   const loadFavorites = useCallback(async (uid: string) => {
     if (!isSupabaseConfigured) return;
     const { data, error } = await supabase
@@ -134,9 +149,31 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   // ── Effects ────────────────────────────────────────────────
 
-  // Public reports — load on mount, independent of auth
+  // On mount: get user location → fetch nearby places → load reports
   useEffect(() => {
-    loadRecentReports();
+    async function init() {
+      setLocationsLoading(true);
+      try {
+        const { status } = await ExpoLocation.requestForegroundPermissionsAsync();
+        if (status === 'granted') {
+          const pos = await ExpoLocation.getCurrentPositionAsync({
+            accuracy: ExpoLocation.Accuracy.Balanced,
+          });
+          const { latitude: lat, longitude: lng } = pos.coords;
+          setUserLocation({ lat, lng });
+
+          const places = await searchNearby(lat, lng, 3000);
+          if (places.length > 0) setLocations(places);
+        }
+      } catch (err) {
+        console.warn('init location/nearby:', err);
+      } finally {
+        setLocationsLoading(false);
+      }
+      // Always update crowd levels from Supabase (works for whatever locations are set)
+      await loadRecentReports();
+    }
+    init();
   }, [loadRecentReports]);
 
   // User-specific data — (re)load whenever the logged-in user changes
@@ -159,8 +196,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const getReportsForLocation = useCallback(
     (id: string) => {
-      // `reports` is the Supabase source of truth (already filtered to last 60 min).
-      // Client-side timestamp filter guards against reports that expire mid-session.
       const cutoff = Date.now() - 60 * 60 * 1000;
       return reports.filter(
         r => r.locationId === id && new Date(r.timestamp).getTime() > cutoff
@@ -171,7 +206,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const submitReport = useCallback(
     async (locationId: string, level: CrowdLevel, comment?: string) => {
-      // Check the live Supabase session matches React auth state
       const { data: { session } } = await supabase.auth.getSession();
       console.log('[submitReport] userId:', userId ?? 'null');
       console.log('[submitReport] session user:', session?.user?.id ?? 'NO SESSION');
@@ -185,7 +219,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return;
       }
 
-      // Optimistic local update so the UI responds instantly
       const optimistic: Report = {
         id:         `opt-${Date.now()}`,
         locationId,
@@ -253,14 +286,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     const isSaved = savedLocationIds.includes(id);
 
-    // Optimistic update — pure state change, no side effects
     setSavedLocationIds(prev =>
       isSaved ? prev.filter(x => x !== id) : [...prev, id]
     );
 
     if (!isSupabaseConfigured) return;
 
-    // Persist to Supabase outside the state updater so it runs exactly once
     const { error } = isSaved
       ? await supabase.from('user_favorites').delete()
           .eq('user_id', userId).eq('location_id', id)
@@ -270,7 +301,6 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
     if (error) {
       console.warn('toggleSaved:', error.message);
-      // Revert optimistic update on failure
       setSavedLocationIds(prev =>
         isSaved ? [...prev, id] : prev.filter(x => x !== id)
       );
@@ -281,12 +311,17 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setRecentLocationIds(prev => [id, ...prev.filter(x => x !== id)].slice(0, 10));
   }, []);
 
+  const registerLocation = useCallback((loc: Location) => {
+    setLocations(prev => prev.some(l => l.id === loc.id) ? prev : [...prev, loc]);
+  }, []);
+
   return (
     <AppContext.Provider value={{
-      locations, reports, myReports,
+      locations, locationsLoading, userLocation,
+      reports, myReports,
       savedLocationIds, recentLocationIds,
       getLocationById, getReportsForLocation,
-      submitReport, toggleSaved, addRecentLocation,
+      submitReport, toggleSaved, addRecentLocation, registerLocation,
     }}>
       {children}
     </AppContext.Provider>

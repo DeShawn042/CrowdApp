@@ -5,6 +5,7 @@ import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { useReviews } from '@/hooks/useReviews';
+import { getCrowdDisplay } from '@/utils/crowdUtils';
 import CrowdLevelBadge from './CrowdLevelBadge';
 import LocationPhoto from './LocationPhoto';
 
@@ -15,11 +16,13 @@ interface Props {
 }
 
 export default function LocationCard({ location, onPress, showDistance = true }: Props) {
-  const { savedLocationIds, toggleSaved } = useAppContext();
+  const { savedLocationIds, toggleSaved, getReportsForLocation } = useAppContext();
   const isFavorite = savedLocationIds.includes(location.id);
   const photoUrl = usePlacesPhoto(location);
   const { averageRating, reviews } = useReviews(location.id);
   const reviewCount = reviews.length;
+  const liveReports  = getReportsForLocation(location.id);
+  const crowdDisplay = getCrowdDisplay(location, liveReports);
 
   return (
     <Pressable
@@ -30,18 +33,26 @@ export default function LocationCard({ location, onPress, showDistance = true }:
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{location.name}</Text>
           {averageRating !== null ? (
+            // App has reviews — show app average + count
             <View style={styles.starPill}>
               <Text style={styles.starChar}>⭐</Text>
               <Text style={styles.starValue}>{averageRating.toFixed(1)}</Text>
-              <Text style={styles.reviewCount}>({reviewCount})</Text>
+              <Text style={styles.reviewCount}>{reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}</Text>
+            </View>
+          ) : location.rating > 0 ? (
+            // No app reviews — fall back to Google Places rating
+            <View style={[styles.starPill, styles.googlePill]}>
+              <Text style={styles.starChar}>⭐</Text>
+              <Text style={styles.starValue}>{location.rating.toFixed(1)}</Text>
+              <Text style={styles.googleLabel}>Google</Text>
             </View>
           ) : (
-            <Text style={styles.noReviews}>0 reviews</Text>
+            <Text style={styles.noReviews}>No reviews yet</Text>
           )}
         </View>
         <Text style={styles.address} numberOfLines={1}>{location.address}</Text>
         <View style={styles.meta}>
-          <CrowdLevelBadge level={location.currentCrowd} size="sm" />
+          <CrowdLevelBadge level={crowdDisplay.level} size="sm" source={crowdDisplay.source} />
           {location.reportCount > 0 && (
             <Text style={styles.reportCount}>
               {location.reportCount} {location.reportCount === 1 ? 'report' : 'reports'}
@@ -76,9 +87,11 @@ const styles = StyleSheet.create({
   nameRow:   { flexDirection: 'row', alignItems: 'center', gap: 6 },
   name:      { color: COLORS.text, fontSize: 16, fontWeight: '600', flex: 1 },
   starPill:    { flexDirection: 'row', alignItems: 'center', gap: 2, backgroundColor: '#F59E0B18', paddingHorizontal: 6, paddingVertical: 2, borderRadius: 8 },
+  googlePill:  { backgroundColor: '#4285F418' },
   starChar:    { fontSize: 11 },
   starValue:   { color: '#F59E0B', fontSize: 12, fontWeight: '700' },
   reviewCount: { color: COLORS.textMuted, fontSize: 11 },
+  googleLabel: { color: '#4285F4', fontSize: 11, fontWeight: '600' },
   noReviews:   { color: COLORS.textMuted, fontSize: 11 },
   address:   { color: COLORS.textSec, fontSize: 12 },
   meta:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },

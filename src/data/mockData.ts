@@ -1,5 +1,8 @@
 export type CrowdLevel = 'empty' | 'light' | 'moderate' | 'packed';
-export type LocationType = 'gym' | 'bar' | 'restaurant';
+export type LocationType =
+  | 'gym' | 'bar' | 'restaurant' | 'cafe'
+  | 'shopping' | 'entertainment' | 'spa' | 'gas_station'
+  | 'medical' | 'park' | 'hotel' | 'transit' | 'other';
 
 export interface Review {
   id: string;
@@ -14,6 +17,14 @@ export interface Review {
   ownerResponse?: string; // owner reply, if any
 }
 
+export interface GoogleReview {
+  authorName: string;
+  authorPhotoUri?: string;
+  rating: number;
+  text: string;
+  relativeTime: string;
+}
+
 export interface Location {
   id: string;
   name: string;
@@ -22,7 +33,12 @@ export interface Location {
   distance: string;
   currentCrowd: CrowdLevel;
   reportCount: number;
+  /** Google Places overall rating (0–5) */
   rating: number;
+  /** Google Places total rating count */
+  googleReviewCount?: number;
+  /** Up to 5 preview reviews returned by the Places API */
+  googleReviews?: GoogleReview[];
   hours: string;
   coordinates: { lat: number; lng: number };
   description: string;
@@ -31,6 +47,18 @@ export interface Location {
   // Optional Google Places photo URL (fetched at runtime if absent)
   photoUrl?: string;
   placeId?: string;
+  /**
+   * Whether the place is currently open per Google Places.
+   * true = open, false = closed, undefined = no hours data available.
+   */
+  openNow?: boolean;
+  /** Today's open hour in 24h format (0–23). Absent when Google has no hours. */
+  openHour?: number;
+  /**
+   * Today's close hour. Values > 23 indicate next-day close:
+   *   24 = midnight,  26 = 2 AM next day, etc.
+   */
+  closeHour?: number;
   // Cached average star rating (populated at runtime from Supabase)
   averageRating?: number;
 }

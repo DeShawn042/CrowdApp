@@ -1,4 +1,4 @@
-import { CrowdLevel, Report } from '@/data/mockData';
+import { CrowdLevel, Location, Report } from '@/data/mockData';
 
 export const CROWD_LEVELS: CrowdLevel[] = ['empty', 'light', 'moderate', 'packed'];
 
@@ -68,6 +68,33 @@ export function timeAgo(timestamp: string): string {
 export function formatDate(timestamp: string): string {
   const date = new Date(timestamp);
   return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+export type CrowdSource = 'live' | 'typical' | 'closed' | 'none';
+
+export interface CrowdDisplay {
+  source: CrowdSource;
+  level?: CrowdLevel;
+  reportCount?: number;
+}
+
+/**
+ * Three-tier crowd data priority:
+ *  1. Live   — active Supabase reports in the last 60 min
+ *  2. Typical — type-based estimate when place is open (Google confirmed or unknown)
+ *  3. Closed / None — no meaningful data to show
+ */
+export function getCrowdDisplay(location: Location, activeReports: Report[]): CrowdDisplay {
+  if (activeReports.length > 0) {
+    return { source: 'live', level: location.currentCrowd, reportCount: activeReports.length };
+  }
+  if (location.openNow === false) {
+    return { source: 'closed' };
+  }
+  if (location.type === 'other') {
+    return { source: 'none' };
+  }
+  return { source: 'typical', level: location.currentCrowd };
 }
 
 export const BUSY_HOUR_LABELS = ['6a', '7a', '8a', '9a', '10a', '11a', '12p', '1p', '2p', '3p', '4p', '5p', '6p', '7p', '8p', '9p', '10p', '11p'];

@@ -1,12 +1,13 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusyTimesChart from '@/components/BusyTimesChart';
 import ClaimModal from '@/components/ClaimModal';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import LocationPhoto from '@/components/LocationPhoto';
 import OwnerResponseModal from '@/components/OwnerResponseModal';
+import GoogleReviewCard from '@/components/GoogleReviewCard';
 import ReportCard from '@/components/ReportCard';
 import ReviewCard from '@/components/ReviewCard';
 import ReviewForm from '@/components/ReviewForm';
@@ -17,55 +18,124 @@ import { useBusinessClaim } from '@/hooks/useBusinessClaim';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { useReviews } from '@/hooks/useReviews';
 import { currentUserId } from '@/lib/supabase';
-import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
-import type { Review } from '@/data/mockData';
+import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS, getCrowdDisplay } from '@/utils/crowdUtils';
+import { fetchPlaceDetails } from '@/utils/googlePlaces';
+import MapChooserModal from '@/components/MapChooserModal';
+import QuickReportsSection from '@/components/QuickReportsSection';
+import QuickReportSummaries from '@/components/QuickReportSummaries';
+import { openMapSheet } from '@/hooks/useMapLink';
+import type { MapOption } from '@/hooks/useMapLink';
+import { useQuickReports } from '@/hooks/useQuickReports';
+import { getQuickReportConfigs } from '@/utils/quickReportConfig';
+import type { Location, Review } from '@/data/mockData';
 
 export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { getLocationById, getReportsForLocation, savedLocationIds, toggleSaved } = useAppContext();
+  const {
+    getLocationById, getReportsForLocation, savedLocationIds,
+    toggleSaved, registerLocation, userLocation,
+  } = useAppContext();
 
-  const location = getLocationById(id ?? '');
-  const reports  = getReportsForLocation(id ?? '');
-  const isSaved  = savedLocationIds.includes(id ?? '');
+  // ── Location resolution ─────────────────────────────────────
+  // Priority: context cache → Google Places API fallback
+  const [fetchedLocation, setFetchedLocation] = useState<Location | null>(null);
+  const [fetchLoading,    setFetchLoading]    = useState(false);
+  const [fetchError,      setFetchError]      = useState(false);
 
-  const photoUrl = usePlacesPhoto(location);
+  const location = getLocationById(id ?? '') ?? fetchedLocation;
+
+  const attemptFetch = useCallback(async () => {
+    if (!id) return;
+    setFetchLoading(true);
+    setFetchError(false);
+    try {
+      const loc = await fetchPlaceDetails(id, userLocation?.lat, userLocation?.lng);
+      if (loc) {
+        setFetchedLocation(loc);
+        registerLocation(loc); // cache for future navigations in this session
+      } else {
+        setFetchError(true);
+      }
+    } catch {
+      setFetchError(true);
+    } finally {
+      setFetchLoading(false);
+    }
+  }, [id, userLocation?.lat, userLocation?.lng, registerLocation]);
+
+  useEffect(() => {
+    // Only fetch from API if the location isn't already in the context store
+    if (id && !getLocationById(id) && !fetchedLocation) {
+      attemptFetch();
+    }
+  }, [id]); // intentionally only depends on id — we only need one attempt per navigation
+
+  // ── Hooks that must run unconditionally ──────────────────────
+  const reports = getReportsForLocation(id ?? '');
+  const isSaved = savedLocationIds.includes(id ?? '');
+
+  const photoUrl = usePlacesPhoto(location ?? undefined);
   const { reviews, myReview, averageRating, submitReview } = useReviews(id ?? '');
   const claim = useBusinessClaim(id ?? '', location?.name, location?.address);
 
-  const [showReviewForm,    setShowReviewForm]    = useState(false);
-  const [showClaimModal,    setShowClaimModal]    = useState(false);
-  const [respondTarget,     setRespondTarget]     = useState<Review | null>(null);
+  const quickReports = useQuickReports(id ?? '');
 
-  const currentHourIndex = useMemo(() => {
-    const h = new Date().getHours();
-    if (h < 6) return 0;
-    if (h > 23) return 17;
-    return Math.min(h - 6, 17);
-  }, []);
+  const [showReviewForm,  setShowReviewForm]  = useState(false);
+  const [showClaimModal,  setShowClaimModal]  = useState(false);
+  const [respondTarget,   setRespondTarget]   = useState<Review | null>(null);
+  const [mapOptions,      setMapOptions]      = useState<MapOption[]>([]);
+  const [showMapChooser,  setShowMapChooser]  = useState(false);
 
-  async function handleShare() {
-    if (!location) return;
-    await Share.share({
-      message: `It's ${CROWD_LABELS[location.currentCrowd]} at ${location.name} right now! Check CrowdApp to plan your visit 📱`,
-      title: `${location.name} — CrowdApp`,
-    });
-  }
+  const currentHour = new Date().getHours();
 
-  if (!location) {
+  // ── Early returns (after all hooks) ─────────────────────────
+  if (fetchLoading) {
     return (
       <SafeAreaView style={styles.safe}>
         <Pressable style={styles.backBtn} onPress={() => router.back()}>
           <Text style={styles.backText}>‹ Back</Text>
         </Pressable>
-        <View style={styles.notFound}>
-          <Text style={styles.notFoundText}>Location not found.</Text>
+        <View style={styles.centerState}>
+          <ActivityIndicator size="large" color={COLORS.primary} />
+          <Text style={styles.centerStateText}>Loading location…</Text>
         </View>
       </SafeAreaView>
     );
   }
 
-  const crowdColor = CROWD_COLORS[location.currentCrowd];
-  const crowdBg    = CROWD_BG_COLORS[location.currentCrowd];
+  if (fetchError || (!location && !fetchLoading)) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backText}>‹ Back</Text>
+        </Pressable>
+        <View style={styles.centerState}>
+          <Text style={styles.errorEmoji}>⚠️</Text>
+          <Text style={styles.errorTitle}>Couldn't load this location</Text>
+          <Text style={styles.errorSub}>Check your connection and try again.</Text>
+          <Pressable style={styles.retryBtn} onPress={attemptFetch}>
+            <Text style={styles.retryText}>Retry</Text>
+          </Pressable>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  if (!location) return null; // shouldn't reach here
+
+  const crowdDisplay = getCrowdDisplay(location, reports);
+  const crowdColor = crowdDisplay.level ? CROWD_COLORS[crowdDisplay.level] : '#4B5563';
+  const crowdBg    = crowdDisplay.level ? CROWD_BG_COLORS[crowdDisplay.level] : '#1A1A22';
+
+  async function handleShare() {
+    const crowdDesc = crowdDisplay.level
+      ? `It's ${CROWD_LABELS[crowdDisplay.level]} at ${location!.name} right now!`
+      : `Check out ${location!.name} on CrowdApp!`;
+    await Share.share({
+      message: `${crowdDesc} Check CrowdApp to plan your visit 📱`,
+      title: `${location!.name} — CrowdApp`,
+    });
+  }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -105,7 +175,21 @@ export default function LocationDetailScreen() {
                 ) : null}
               </View>
               <Text style={styles.name} numberOfLines={2}>{location.name}</Text>
-              <Text style={styles.address}>📍 {location.address}</Text>
+              <Pressable
+                onPress={() =>
+                  openMapSheet(
+                    location.coordinates.lat,
+                    location.coordinates.lng,
+                    location.name,
+                    (opts, _fallback) => {
+                      setMapOptions(opts);
+                      setShowMapChooser(true);
+                    },
+                  )
+                }
+                hitSlop={8}>
+                <Text style={styles.addressLink}>📍 {location.address}</Text>
+              </Pressable>
             </View>
           </View>
           <Text style={styles.description}>{location.description}</Text>
@@ -116,32 +200,55 @@ export default function LocationDetailScreen() {
         </View>
 
         {/* Current crowd level */}
-        <View style={[styles.crowdCard, { backgroundColor: crowdBg, borderColor: crowdColor + '60' }]}>
-          <View style={styles.crowdHeader}>
-            <Text style={styles.crowdTitle}>Right Now</Text>
-            <Text style={styles.reportCount}>{reports.length} live {reports.length === 1 ? 'report' : 'reports'}</Text>
+        {crowdDisplay.source === 'closed' ? (
+          <View style={styles.crowdCardMuted}>
+            <Text style={styles.crowdTitleMuted}>Currently Closed</Text>
+            <Text style={styles.reportCountMuted}>No crowd data available while closed</Text>
           </View>
-          <View style={styles.crowdLevelRow}>
-            <View style={[styles.crowdDot, { backgroundColor: crowdColor }]} />
-            <Text style={[styles.crowdLevelText, { color: crowdColor }]}>
-              {CROWD_LABELS[location.currentCrowd]}
-            </Text>
+        ) : crowdDisplay.source === 'none' ? (
+          <View style={styles.crowdCardMuted}>
+            <Text style={styles.crowdTitleMuted}>No data yet</Text>
+            <Text style={styles.reportCountMuted}>Be the first to report the crowd level</Text>
           </View>
-          <View style={styles.crowdMeter}>
-            {(['empty', 'light', 'moderate', 'packed'] as const).map((level, i) => (
-              <View
-                key={level}
-                style={[
-                  styles.meterSegment,
-                  { backgroundColor: CROWD_COLORS[level] },
-                  location.currentCrowd === level && styles.meterActive,
-                  i === 0 && { borderTopLeftRadius: 6, borderBottomLeftRadius: 6 },
-                  i === 3 && { borderTopRightRadius: 6, borderBottomRightRadius: 6 },
-                ]}
-              />
-            ))}
+        ) : (
+          <View style={[styles.crowdCard, { backgroundColor: crowdBg, borderColor: crowdColor + '60' }]}>
+            <View style={styles.crowdHeader}>
+              {crowdDisplay.source === 'live' ? (
+                <View style={styles.liveRow}>
+                  <View style={styles.livePulse} />
+                  <Text style={styles.crowdTitle}>Live</Text>
+                </View>
+              ) : (
+                <Text style={styles.crowdTitle}>Typical</Text>
+              )}
+              <Text style={styles.reportCount}>
+                {crowdDisplay.source === 'live'
+                  ? `${crowdDisplay.reportCount} ${crowdDisplay.reportCount === 1 ? 'report' : 'reports'}`
+                  : 'Based on historical data'}
+              </Text>
+            </View>
+            <View style={styles.crowdLevelRow}>
+              <View style={[styles.crowdDot, { backgroundColor: crowdColor }]} />
+              <Text style={[styles.crowdLevelText, { color: crowdColor }]}>
+                {crowdDisplay.level ? CROWD_LABELS[crowdDisplay.level] : ''}
+              </Text>
+            </View>
+            <View style={styles.crowdMeter}>
+              {(['empty', 'light', 'moderate', 'packed'] as const).map((level, i) => (
+                <View
+                  key={level}
+                  style={[
+                    styles.meterSegment,
+                    { backgroundColor: CROWD_COLORS[level] },
+                    crowdDisplay.level === level && styles.meterActive,
+                    i === 0 && { borderTopLeftRadius: 6, borderBottomLeftRadius: 6 },
+                    i === 3 && { borderTopRightRadius: 6, borderBottomRightRadius: 6 },
+                  ]}
+                />
+              ))}
+            </View>
           </View>
-        </View>
+        )}
 
         {/* Report button */}
         <Pressable
@@ -152,8 +259,54 @@ export default function LocationDetailScreen() {
           <Text style={styles.reportBtnArrow}>›</Text>
         </Pressable>
 
+        {/* Quick Reports — hidden for categories with no applicable report types */}
+        {(() => {
+          const qrConfigs = getQuickReportConfigs(location.type);
+          if (!qrConfigs) return null;
+          return (
+            <QuickReportsSection
+              configs={qrConfigs}
+              aggregated={quickReports.aggregated}
+              myLast={quickReports.myLast}
+              cooldownFor={quickReports.cooldownFor}
+              onSubmit={quickReports.submit}
+            />
+          );
+        })()}
+
+        {/* Quick Report summaries — above busy times, only renders if data exists */}
+        {(() => {
+          const qrConfigs = getQuickReportConfigs(location.type);
+          if (!qrConfigs) return null;
+          const activeTypes = new Set(qrConfigs.map(c => c.type));
+          return (
+            <QuickReportSummaries
+              reports={quickReports.reports}
+              priceReports={quickReports.priceReports}
+              activeTypes={activeTypes}
+            />
+          );
+        })()}
+
         {/* Busy times chart */}
-        <BusyTimesChart data={location.busyHours} currentHourIndex={currentHourIndex} liveCrowd={location.currentCrowd} />
+        <BusyTimesChart
+          data={location.busyHours}
+          currentHour={currentHour}
+          liveCrowd={crowdDisplay.source === 'live' ? crowdDisplay.level : undefined}
+          googleLivePct={
+            // Show Google's busyness estimate when the place is confirmed open
+            // and there are no CrowdApp reports overriding it.
+            location.openNow === true && crowdDisplay.source !== 'live'
+              ? (location.busyHours[
+                  currentHour >= 6 && currentHour <= 23
+                    ? currentHour - 6
+                    : currentHour < 6 ? 0 : 17
+                ] ?? 0)
+              : undefined
+          }
+          openHour={location.openHour}
+          closeHour={location.closeHour}
+        />
 
         {/* Recent reports */}
         <View style={styles.section}>
@@ -171,10 +324,45 @@ export default function LocationDetailScreen() {
           )}
         </View>
 
-        {/* Reviews */}
+        {/* Google Reviews */}
+        {((location.googleReviews?.length ?? 0) > 0 || location.rating > 0) && (
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.googleBadgeRow}>
+                <Text style={styles.sectionTitle}>Google Reviews</Text>
+                <View style={styles.googleBadge}>
+                  <Text style={styles.googleBadgeText}>G</Text>
+                </View>
+              </View>
+              {location.rating > 0 && (
+                <View style={styles.avgRow}>
+                  <StarRating rating={location.rating} size={14} />
+                  <Text style={styles.avgText}>
+                    {location.rating.toFixed(1)}
+                    {location.googleReviewCount ? ` (${location.googleReviewCount.toLocaleString()})` : ''}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {(location.googleReviews?.length ?? 0) > 0 ? (
+              <View style={styles.listCard}>
+                {(location.googleReviews ?? []).map((r, i) => (
+                  <GoogleReviewCard key={i} review={r} />
+                ))}
+              </View>
+            ) : (
+              <View style={styles.emptyCard}>
+                <Text style={styles.emptySub}>No preview reviews available from Google.</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* CrowdApp Reviews */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Reviews</Text>
+            <Text style={styles.sectionTitle}>CrowdApp Reviews</Text>
             {averageRating !== null && (
               <View style={styles.avgRow}>
                 <StarRating rating={averageRating} size={14} />
@@ -195,14 +383,13 @@ export default function LocationDetailScreen() {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyEmoji}>⭐</Text>
               <Text style={styles.emptyTitle}>No reviews yet</Text>
-              <Text style={styles.emptySub}>Be the first to leave a review!</Text>
+              <Text style={styles.emptySub}>Be the first to leave a CrowdApp review!</Text>
             </View>
           ) : (
             <View style={styles.listCard}>
               {reviews.map(r => (
                 <View key={r.id}>
                   <ReviewCard review={r} isOwn={r.userId === currentUserId} />
-                  {/* Owner respond button — only visible to the verified owner */}
                   {claim.isCurrentUserOwner && (
                     <Pressable
                       style={styles.respondBtn}
@@ -242,6 +429,11 @@ export default function LocationDetailScreen() {
       </ScrollView>
 
       {/* Modals */}
+      <MapChooserModal
+        visible={showMapChooser}
+        options={mapOptions}
+        onClose={() => setShowMapChooser(false)}
+      />
       <ReviewForm
         visible={showReviewForm}
         onClose={() => setShowReviewForm(false)}
@@ -279,6 +471,13 @@ const styles = StyleSheet.create({
   content:         { padding: 20, paddingTop: 0, gap: 20, paddingBottom: 60 },
   notFound:        { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFoundText:    { color: COLORS.textSec, fontSize: 16 },
+  centerState:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
+  centerStateText: { color: COLORS.textMuted, fontSize: 15 },
+  errorEmoji:      { fontSize: 44 },
+  errorTitle:      { color: COLORS.text, fontSize: 18, fontWeight: '700', textAlign: 'center' },
+  errorSub:        { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
+  retryBtn:        { marginTop: 8, backgroundColor: COLORS.primary, borderRadius: 12, paddingHorizontal: 28, paddingVertical: 12 },
+  retryText:       { color: '#fff', fontSize: 15, fontWeight: '700' },
   infoSection:     { gap: 10 },
   nameRow:         { flexDirection: 'row', alignItems: 'flex-start', gap: 14 },
   nameCol:         { flex: 1, gap: 4, justifyContent: 'center' },
@@ -291,12 +490,18 @@ const styles = StyleSheet.create({
   pendingText:     { color: '#F59E0B', fontSize: 11, fontWeight: '700' },
   name:            { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
   address:         { color: COLORS.textSec, fontSize: 13 },
+  addressLink:     { color: COLORS.primary, fontSize: 13, textDecorationLine: 'underline' },
   description:     { color: COLORS.textSec, fontSize: 14, lineHeight: 20, marginTop: 4 },
   hoursRow:        { flexDirection: 'row', justifyContent: 'space-between', marginTop: 4 },
   hours:           { color: COLORS.textMuted, fontSize: 13 },
   distance:        { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
   crowdCard:       { borderRadius: 20, padding: 20, gap: 12, borderWidth: 1 },
+  crowdCardMuted:  { borderRadius: 20, padding: 20, gap: 6, borderWidth: 1, backgroundColor: '#1A1A22', borderColor: '#2D2D3A' },
+  crowdTitleMuted: { color: '#6B7280', fontSize: 16, fontWeight: '700' },
+  reportCountMuted:{ color: '#4B5563', fontSize: 12 },
   crowdHeader:     { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  liveRow:         { flexDirection: 'row', alignItems: 'center', gap: 7 },
+  livePulse:       { width: 9, height: 9, borderRadius: 5, backgroundColor: '#22C55E' },
   crowdTitle:      { color: COLORS.text, fontSize: 16, fontWeight: '700' },
   reportCount:     { color: COLORS.textMuted, fontSize: 12 },
   crowdLevelRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
@@ -313,6 +518,9 @@ const styles = StyleSheet.create({
   section:         { gap: 14 },
   sectionHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle:    { color: COLORS.text, fontSize: 18, fontWeight: '700' },
+  googleBadgeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  googleBadge:     { width: 20, height: 20, borderRadius: 10, backgroundColor: '#4285F4', alignItems: 'center', justifyContent: 'center' },
+  googleBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
   avgRow:          { flexDirection: 'row', alignItems: 'center', gap: 6 },
   avgText:         { color: COLORS.textMuted, fontSize: 12 },
   writeReviewBtn:  { backgroundColor: COLORS.card, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary + '50', borderStyle: 'dashed' },

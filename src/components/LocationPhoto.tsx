@@ -4,9 +4,19 @@ import { LocationType } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
 
 const TYPE_ICONS: Record<LocationType, string> = {
-  gym: '🏋️',
-  bar: '🍺',
-  restaurant: '🍽️',
+  gym:           '🏋️',
+  bar:           '🍺',
+  restaurant:    '🍽️',
+  cafe:          '☕',
+  shopping:      '🛍️',
+  entertainment: '🎬',
+  spa:           '💆',
+  gas_station:   '⛽',
+  medical:       '🏥',
+  park:          '🌳',
+  hotel:         '🏨',
+  transit:       '🚇',
+  other:         '📍',
 };
 
 interface Props {
@@ -31,7 +41,9 @@ export default function LocationPhoto({ type, photoUrl, size, borderRadius = 14 
 
   return (
     <View style={[styles.placeholder, sharedStyle]}>
-      <Text style={{ fontSize: Math.round(size * 0.45) }}>{TYPE_ICONS[type]}</Text>
+      <Text style={{ fontSize: Math.round(size * 0.45) }}>
+        {TYPE_ICONS[type] ?? '📍'}
+      </Text>
     </View>
   );
 }

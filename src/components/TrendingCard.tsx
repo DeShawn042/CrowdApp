@@ -5,24 +5,31 @@ import { COLORS } from '@/constants/crowdColors';
 import { TrendingLocation } from '@/hooks/useTrending';
 import { CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
 
-const TYPE_ICONS: Record<LocationType, string> = { gym: '🏋️', bar: '🍺', restaurant: '🍽️' };
+const TYPE_ICONS: Record<LocationType, string> = {
+  gym: '🏋️', bar: '🍺', restaurant: '🍽️', cafe: '☕',
+  shopping: '🛍️', entertainment: '🎬', spa: '💆', gas_station: '⛽',
+  medical: '🏥', park: '🌳', hotel: '🏨', transit: '🚇', other: '📍',
+};
 
 interface Props {
   location: TrendingLocation;
   rank: number;
   onPress: () => void;
+  showRank?: boolean;
 }
 
-export default function TrendingCard({ location, rank, onPress }: Props) {
+export default function TrendingCard({ location, rank, onPress, showRank = true }: Props) {
   const crowdColor = CROWD_COLORS[location.currentCrowd];
 
   return (
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={onPress}>
-      <View style={styles.rankBadge}>
-        <Text style={styles.rankText}>#{rank}</Text>
-      </View>
+      {showRank && (
+        <View style={styles.rankBadge}>
+          <Text style={styles.rankText}>#{rank}</Text>
+        </View>
+      )}
       <Text style={styles.typeIcon}>{TYPE_ICONS[location.type]}</Text>
       <Text style={styles.name} numberOfLines={2}>{location.name}</Text>
       <View style={[styles.crowdPill, { backgroundColor: crowdColor + '20', borderColor: crowdColor + '60' }]}>
