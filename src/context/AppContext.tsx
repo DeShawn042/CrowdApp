@@ -248,20 +248,34 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [reports, userId, userName, loadRecentReports, loadMyReports]
   );
 
-  const toggleSaved = useCallback((id: string) => {
+  const toggleSaved = useCallback(async (id: string) => {
     if (!userId) return;
-    setSavedLocationIds(prev => {
-      const isSaved = prev.includes(id);
-      if (isSupabaseConfigured) {
-        if (isSaved) {
-          supabase.from('user_favorites').delete().eq('user_id', userId).eq('location_id', id);
-        } else {
-          supabase.from('user_favorites').insert({ user_id: userId, location_id: id });
-        }
-      }
-      return isSaved ? prev.filter(x => x !== id) : [...prev, id];
-    });
-  }, [userId]);
+
+    const isSaved = savedLocationIds.includes(id);
+
+    // Optimistic update — pure state change, no side effects
+    setSavedLocationIds(prev =>
+      isSaved ? prev.filter(x => x !== id) : [...prev, id]
+    );
+
+    if (!isSupabaseConfigured) return;
+
+    // Persist to Supabase outside the state updater so it runs exactly once
+    const { error } = isSaved
+      ? await supabase.from('user_favorites').delete()
+          .eq('user_id', userId).eq('location_id', id)
+      : await supabase.from('user_favorites').insert(
+          { user_id: userId, location_id: id }
+        );
+
+    if (error) {
+      console.warn('toggleSaved:', error.message);
+      // Revert optimistic update on failure
+      setSavedLocationIds(prev =>
+        isSaved ? [...prev, id] : prev.filter(x => x !== id)
+      );
+    }
+  }, [userId, savedLocationIds]);
 
   const addRecentLocation = useCallback((id: string) => {
     setRecentLocationIds(prev => [id, ...prev.filter(x => x !== id)].slice(0, 10));
