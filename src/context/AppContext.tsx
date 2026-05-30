@@ -1,13 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import {
-  CrowdLevel,
-  Location,
-  MOCK_LOCATIONS,
-  MOCK_REPORTS,
-  MY_REPORTS,
-  Report,
-} from '@/data/mockData';
-import { currentUserId, currentUserName, isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { CrowdLevel, Location, MOCK_LOCATIONS, Report } from '@/data/mockData';
+import { useAuth } from '@/context/AuthContext';
+import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { averageReports } from '@/utils/crowdUtils';
 
 interface AppContextValue {
@@ -27,9 +21,22 @@ const AppContext = createContext<AppContextValue | null>(null);
 
 const LEVEL_NUMS: Record<CrowdLevel, number> = { empty: 0, light: 1, moderate: 2, packed: 3 };
 
-async function resolveOutlierFlag(locationId: string, userId: string, reportedLevel: CrowdLevel): Promise<boolean> {
+function mapRow(r: any): Report {
+  return {
+    id:         r.id,
+    locationId: r.location_id,
+    userId:     r.user_id,
+    userName:   r.user_name,
+    crowdLevel: r.crowd_level as CrowdLevel,
+    comment:    r.comment ?? undefined,
+    timestamp:  r.created_at,
+  };
+}
+
+async function getOutlierFlag(locationId: string, userId: string, level: CrowdLevel): Promise<boolean> {
   if (!isSupabaseConfigured) return false;
   const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+
   const { data: recent } = await supabase
     .from('crowd_reports')
     .select('crowd_level')
@@ -41,7 +48,7 @@ async function resolveOutlierFlag(locationId: string, userId: string, reportedLe
   if (!recent || recent.length < 3) return false;
 
   const avg = recent.reduce((s, r) => s + LEVEL_NUMS[r.crowd_level as CrowdLevel], 0) / recent.length;
-  const isDivergent = Math.abs(LEVEL_NUMS[reportedLevel] - avg) >= 2;
+  const isDivergent = Math.abs(LEVEL_NUMS[level] - avg) >= 2;
 
   const { data: existing } = await supabase
     .from('user_report_flags')
@@ -62,25 +69,88 @@ async function resolveOutlierFlag(locationId: string, userId: string, reportedLe
 }
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
-  const [locations, setLocations] = useState<Location[]>(MOCK_LOCATIONS);
-  const [reports, setReports] = useState<Report[]>(MOCK_REPORTS);
-  const [myReports, setMyReports] = useState<Report[]>(MY_REPORTS);
-  const [savedLocationIds, setSavedLocationIds] = useState<string[]>([]);
-  const [recentLocationIds, setRecentLocationIds] = useState<string[]>(['1', '3', '2']);
+  // Derive user identity directly from AuthContext so timing is always correct
+  const { user } = useAuth();
+  const userId   = user?.id   ?? null;
+  const userName = user?.name ?? 'User';
 
-  // Load favorites from Supabase on mount
-  useEffect(() => {
+  const [locations,       setLocations]       = useState<Location[]>(MOCK_LOCATIONS);
+  // Start empty — populated from Supabase, not mock data
+  const [reports,         setReports]         = useState<Report[]>([]);
+  const [myReports,       setMyReports]       = useState<Report[]>([]);
+  const [savedLocationIds, setSavedLocationIds] = useState<string[]>([]);
+  const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
+
+  // ── Loaders ────────────────────────────────────────────────
+
+  /** Recent reports from ALL users (last 60 min). Used for location detail cards. */
+  const loadRecentReports = useCallback(async () => {
     if (!isSupabaseConfigured) return;
-    supabase
+    const cutoff = new Date(Date.now() - 60 * 60 * 1000).toISOString();
+    const { data, error } = await supabase
+      .from('crowd_reports')
+      .select('id, location_id, user_id, user_name, crowd_level, comment, created_at')
+      .gte('created_at', cutoff)
+      .eq('is_flagged_user', false)
+      .order('created_at', { ascending: false });
+
+    if (error) { console.warn('loadRecentReports:', error.message); return; }
+
+    const mapped = (data ?? []).map(mapRow);
+    setReports(mapped);
+
+    // Update each location's current crowd level from live data
+    setLocations(locs => locs.map(l => {
+      const locReports = mapped.filter(r => r.locationId === l.id);
+      return locReports.length > 0 ? { ...l, currentCrowd: averageReports(locReports) } : l;
+    }));
+  }, []);
+
+  /** Current user's full report history (all time). Used on profile screen. */
+  const loadMyReports = useCallback(async (uid: string) => {
+    if (!isSupabaseConfigured) return;
+    const { data, error } = await supabase
+      .from('crowd_reports')
+      .select('id, location_id, user_id, user_name, crowd_level, comment, created_at')
+      .eq('user_id', uid)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) { console.warn('loadMyReports:', error.message); return; }
+    setMyReports((data ?? []).map(mapRow));
+  }, []);
+
+  /** Current user's saved/hearted locations. */
+  const loadFavorites = useCallback(async (uid: string) => {
+    if (!isSupabaseConfigured) return;
+    const { data, error } = await supabase
       .from('user_favorites')
       .select('location_id')
-      .eq('user_id', currentUserId)
-      .then(({ data }) => {
-        if (data && data.length > 0) {
-          setSavedLocationIds(data.map((f: { location_id: string }) => f.location_id));
-        }
-      });
+      .eq('user_id', uid);
+
+    if (error) { console.warn('loadFavorites:', error.message); return; }
+    setSavedLocationIds((data ?? []).map((f: any) => f.location_id));
   }, []);
+
+  // ── Effects ────────────────────────────────────────────────
+
+  // Public reports — load on mount, independent of auth
+  useEffect(() => {
+    loadRecentReports();
+  }, [loadRecentReports]);
+
+  // User-specific data — (re)load whenever the logged-in user changes
+  useEffect(() => {
+    if (!userId) {
+      setMyReports([]);
+      setSavedLocationIds([]);
+      return;
+    }
+    loadMyReports(userId);
+    loadFavorites(userId);
+  }, [userId, loadMyReports, loadFavorites]);
+
+  // ── Context methods ────────────────────────────────────────
 
   const getLocationById = useCallback(
     (id: string) => locations.find(l => l.id === id),
@@ -89,92 +159,96 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const getReportsForLocation = useCallback(
     (id: string) => {
+      // `reports` is the Supabase source of truth (already filtered to last 60 min).
+      // Client-side timestamp filter guards against reports that expire mid-session.
       const cutoff = Date.now() - 60 * 60 * 1000;
-      return [...reports, ...myReports].filter(
+      return reports.filter(
         r => r.locationId === id && new Date(r.timestamp).getTime() > cutoff
       );
-    },
-    [reports, myReports]
-  );
-
-  const submitReport = useCallback(
-    async (locationId: string, level: CrowdLevel, comment?: string) => {
-      const newReport: Report = {
-        id: `r${Date.now()}`,
-        locationId,
-        userId:    currentUserId,
-        userName:  currentUserName,
-        crowdLevel: level,
-        comment,
-        timestamp: new Date().toISOString(),
-      };
-
-      // Optimistic local update
-      setMyReports(prev => {
-        const updated = [newReport, ...prev];
-        const cutoff = Date.now() - 60 * 60 * 1000;
-        const recent = [
-          ...updated.filter(r => r.locationId === locationId && new Date(r.timestamp).getTime() > cutoff),
-          ...reports.filter(r => r.locationId === locationId && new Date(r.timestamp).getTime() > cutoff),
-        ];
-        setLocations(locs =>
-          locs.map(l => l.id === locationId ? { ...l, currentCrowd: averageReports(recent) } : l)
-        );
-        return updated;
-      });
-
-      // Persist to Supabase (fire-and-forget, doesn't block the UI)
-      try {
-        const isFlaggedUser = await resolveOutlierFlag(locationId, currentUserId, level);
-        if (isSupabaseConfigured) {
-          await supabase.from('crowd_reports').insert({
-            location_id: locationId,
-            user_id: currentUserId,
-            user_name: currentUserName,
-            crowd_level: level,
-            comment: comment ?? null,
-            is_flagged_user: isFlaggedUser,
-          });
-        }
-      } catch (err) {
-        console.warn('Supabase report persist failed:', err);
-      }
     },
     [reports]
   );
 
+  const submitReport = useCallback(
+    async (locationId: string, level: CrowdLevel, comment?: string) => {
+      if (!userId) return;
+
+      // Optimistic local update so the UI responds instantly
+      const optimistic: Report = {
+        id:         `opt-${Date.now()}`,
+        locationId,
+        userId,
+        userName,
+        crowdLevel: level,
+        comment,
+        timestamp:  new Date().toISOString(),
+      };
+
+      setReports(prev => [optimistic, ...prev]);
+      setMyReports(prev => [optimistic, ...prev]);
+      setLocations(locs => locs.map(l => {
+        if (l.id !== locationId) return l;
+        const relevant = [optimistic, ...reports].filter(
+          r => r.locationId === locationId &&
+               Date.now() - new Date(r.timestamp).getTime() < 60 * 60 * 1000
+        );
+        return { ...l, currentCrowd: averageReports(relevant) };
+      }));
+
+      if (!isSupabaseConfigured) return;
+
+      try {
+        const isFlaggedUser = await getOutlierFlag(locationId, userId, level);
+        const { error } = await supabase.from('crowd_reports').insert({
+          location_id:     locationId,
+          user_id:         userId,
+          user_name:       userName,
+          crowd_level:     level,
+          comment:         comment ?? null,
+          is_flagged_user: isFlaggedUser,
+        });
+
+        if (error) {
+          console.warn('submitReport Supabase error:', error.message);
+          return;
+        }
+
+        // Replace optimistic data with canonical Supabase data
+        await loadRecentReports();
+        await loadMyReports(userId);
+      } catch (err) {
+        console.warn('submitReport failed:', err);
+      }
+    },
+    [reports, userId, userName, loadRecentReports, loadMyReports]
+  );
+
   const toggleSaved = useCallback((id: string) => {
+    if (!userId) return;
     setSavedLocationIds(prev => {
       const isSaved = prev.includes(id);
       if (isSupabaseConfigured) {
         if (isSaved) {
-          supabase.from('user_favorites').delete().eq('user_id', currentUserId).eq('location_id', id);
+          supabase.from('user_favorites').delete().eq('user_id', userId).eq('location_id', id);
         } else {
-          supabase.from('user_favorites').insert({ user_id: currentUserId, location_id: id });
+          supabase.from('user_favorites').insert({ user_id: userId, location_id: id });
         }
       }
       return isSaved ? prev.filter(x => x !== id) : [...prev, id];
     });
-  }, []);
+  }, [userId]);
 
   const addRecentLocation = useCallback((id: string) => {
     setRecentLocationIds(prev => [id, ...prev.filter(x => x !== id)].slice(0, 10));
   }, []);
 
   return (
-    <AppContext.Provider
-      value={{
-        locations,
-        reports,
-        myReports,
-        savedLocationIds,
-        recentLocationIds,
-        getLocationById,
-        getReportsForLocation,
-        submitReport,
-        toggleSaved,
-        addRecentLocation,
-      }}>
+    <AppContext.Provider value={{
+      locations, reports, myReports,
+      savedLocationIds, recentLocationIds,
+      getLocationById, getReportsForLocation,
+      submitReport, toggleSaved, addRecentLocation,
+    }}>
       {children}
     </AppContext.Provider>
   );
