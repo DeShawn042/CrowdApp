@@ -1,35 +1,108 @@
-import React, { createContext, useCallback, useContext, useState } from 'react';
-import { AppUser, MOCK_USER } from '@/data/mockData';
+import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import { AppUser } from '@/data/mockData';
+import { isSupabaseConfigured, setCurrentUser, supabase } from '@/lib/supabase';
 
 interface AuthContextValue {
   isAuthenticated: boolean;
+  isLoading: boolean;
   user: AppUser | null;
-  login: (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  login:  (email: string, password: string) => Promise<void>;
+  signup: (name: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  logout: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
+function mapToAppUser(u: any): AppUser {
+  const name =
+    u.user_metadata?.name ??
+    u.user_metadata?.full_name ??
+    u.email?.split('@')[0] ??
+    'User';
+  return {
+    id:            u.id,
+    name,
+    email:         u.email ?? '',
+    joinDate:      new Date(u.created_at).toLocaleDateString('en-US', { month: 'long', year: 'numeric' }),
+    totalReports:  0,
+    weeklyReports: 0,
+    favoriteVenue: '',
+  };
+}
+
 export function AuthProvider({ children }: { children: React.ReactNode }) {
-  const [user, setUser] = useState<AppUser | null>(null);
+  const [user, setUser]         = useState<AppUser | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const login = useCallback(async (email: string, _password: string) => {
-    await new Promise(r => setTimeout(r, 800));
-    setUser({ ...MOCK_USER, email });
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setIsLoading(false);
+      return;
+    }
+
+    // Restore an existing session on mount (handles page refresh)
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        const appUser = mapToAppUser(session.user);
+        setUser(appUser);
+        setCurrentUser(session.user.id, appUser.name);
+      }
+      setIsLoading(false);
+    });
+
+    // Keep state in sync with every auth event (sign-in, sign-out, token refresh)
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (session?.user) {
+        const appUser = mapToAppUser(session.user);
+        setUser(appUser);
+        setCurrentUser(session.user.id, appUser.name);
+      } else {
+        setUser(null);
+        setCurrentUser(null, null);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const signup = useCallback(async (name: string, email: string, _password: string) => {
-    await new Promise(r => setTimeout(r, 800));
-    setUser({ ...MOCK_USER, name, email });
+  const login = useCallback(async (email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      const name = email.split('@')[0];
+      const appUser: AppUser = { id: 'u1', name, email, joinDate: 'January 2025', totalReports: 0, weeklyReports: 0, favoriteVenue: '' };
+      setUser(appUser);
+      setCurrentUser('u1', name);
+      return;
+    }
+    const { error } = await supabase.auth.signInWithPassword({ email, password });
+    if (error) throw new Error(error.message);
+    // User state updated automatically via onAuthStateChange
   }, []);
 
-  const logout = useCallback(() => {
+  const signup = useCallback(async (name: string, email: string, password: string) => {
+    if (!isSupabaseConfigured) {
+      const appUser: AppUser = { id: 'u1', name, email, joinDate: 'January 2025', totalReports: 0, weeklyReports: 0, favoriteVenue: '' };
+      setUser(appUser);
+      setCurrentUser('u1', name);
+      return { needsEmailConfirmation: false };
+    }
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: { data: { name } },
+    });
+    if (error) throw new Error(error.message);
+    // session is null when Supabase requires email confirmation
+    return { needsEmailConfirmation: !!data.user && !data.session };
+  }, []);
+
+  const logout = useCallback(async () => {
+    if (isSupabaseConfigured) await supabase.auth.signOut();
     setUser(null);
+    setCurrentUser(null, null);
   }, []);
 
   return (
-    <AuthContext.Provider value={{ isAuthenticated: user !== null, user, login, signup, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, isLoading, user, login, signup, logout }}>
       {children}
     </AuthContext.Provider>
   );

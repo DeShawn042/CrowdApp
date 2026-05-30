@@ -16,6 +16,7 @@ import { useAppContext } from '@/context/AppContext';
 import { useBusinessClaim } from '@/hooks/useBusinessClaim';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { useReviews } from '@/hooks/useReviews';
+import { currentUserId } from '@/lib/supabase';
 import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
 import type { Review } from '@/data/mockData';
 
@@ -200,7 +201,7 @@ export default function LocationDetailScreen() {
             <View style={styles.listCard}>
               {reviews.map(r => (
                 <View key={r.id}>
-                  <ReviewCard review={r} isOwn={r.userId === 'u1'} />
+                  <ReviewCard review={r} isOwn={r.userId === currentUserId} />
                   {/* Owner respond button — only visible to the verified owner */}
                   {claim.isCurrentUserOwner && (
                     <Pressable

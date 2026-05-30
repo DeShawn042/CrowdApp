@@ -1,11 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ImagePickerAsset } from 'expo-image-picker';
 import { Review } from '@/data/mockData';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { currentUserId, currentUserName, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { checkToxicity } from '@/utils/perspectiveApi';
-
-const CURRENT_USER_ID   = 'u1';
-const CURRENT_USER_NAME = 'DeShawn';
 const CACHE_TTL = 60 * 1000; // 1 minute
 
 const cache = new Map<string, { data: Review[]; ts: number }>();
@@ -43,7 +40,7 @@ export function useReviews(locationId: string) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const myReview = reviews.find(r => r.userId === CURRENT_USER_ID) ?? null;
+  const myReview = reviews.find(r => r.userId === currentUserId) ?? null;
   const averageRating =
     reviews.length > 0
       ? Math.round((reviews.reduce((s, r) => s + r.rating, 0) / reviews.length) * 10) / 10
@@ -110,7 +107,7 @@ export function useReviews(locationId: string) {
       } else {
         const { data, error: err } = await supabase
           .from('reviews')
-          .insert({ location_id: locationId, user_id: CURRENT_USER_ID, user_name: CURRENT_USER_NAME, rating, content })
+          .insert({ location_id: locationId, user_id: currentUserId, user_name: currentUserName, rating, content })
           .select('id')
           .single();
         if (err) throw err;

@@ -1,6 +1,6 @@
 import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
-import { Platform, Text } from 'react-native';
+import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
 import { useAuth } from '@/context/AuthContext';
 
@@ -11,7 +11,15 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 }
 
 export default function TabsLayout() {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, backgroundColor: '#0F0F13', alignItems: 'center', justifyContent: 'center' }}>
+        <ActivityIndicator color={COLORS.primary} />
+      </View>
+    );
+  }
 
   if (!isAuthenticated) {
     return <Redirect href="/(auth)/login" />;

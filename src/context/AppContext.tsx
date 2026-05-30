@@ -7,7 +7,7 @@ import {
   MY_REPORTS,
   Report,
 } from '@/data/mockData';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { currentUserId, currentUserName, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { averageReports } from '@/utils/crowdUtils';
 
 interface AppContextValue {
@@ -74,7 +74,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     supabase
       .from('user_favorites')
       .select('location_id')
-      .eq('user_id', 'u1')
+      .eq('user_id', currentUserId)
       .then(({ data }) => {
         if (data && data.length > 0) {
           setSavedLocationIds(data.map((f: { location_id: string }) => f.location_id));
@@ -102,8 +102,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const newReport: Report = {
         id: `r${Date.now()}`,
         locationId,
-        userId: 'u1',
-        userName: 'You',
+        userId:    currentUserId,
+        userName:  currentUserName,
         crowdLevel: level,
         comment,
         timestamp: new Date().toISOString(),
@@ -125,12 +125,12 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
       // Persist to Supabase (fire-and-forget, doesn't block the UI)
       try {
-        const isFlaggedUser = await resolveOutlierFlag(locationId, 'u1', level);
+        const isFlaggedUser = await resolveOutlierFlag(locationId, currentUserId, level);
         if (isSupabaseConfigured) {
           await supabase.from('crowd_reports').insert({
             location_id: locationId,
-            user_id: 'u1',
-            user_name: 'You',
+            user_id: currentUserId,
+            user_name: currentUserName,
             crowd_level: level,
             comment: comment ?? null,
             is_flagged_user: isFlaggedUser,
@@ -148,9 +148,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       const isSaved = prev.includes(id);
       if (isSupabaseConfigured) {
         if (isSaved) {
-          supabase.from('user_favorites').delete().eq('user_id', 'u1').eq('location_id', id);
+          supabase.from('user_favorites').delete().eq('user_id', currentUserId).eq('location_id', id);
         } else {
-          supabase.from('user_favorites').insert({ user_id: 'u1', location_id: id });
+          supabase.from('user_favorites').insert({ user_id: currentUserId, location_id: id });
         }
       }
       return isSaved ? prev.filter(x => x !== id) : [...prev, id];

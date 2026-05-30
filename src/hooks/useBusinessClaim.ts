@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { currentUserId, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { domainsMatch, extractDomain, fetchBusinessWebsite } from '@/utils/placesApi';
-
-const CURRENT_USER_ID = 'u1';
 
 export interface OwnerInfo {
   description?: string;
@@ -21,7 +19,7 @@ interface ClaimState {
 async function uploadVerificationDoc(uri: string, locationId: string): Promise<string> {
   const rawExt = uri.split('.').pop()?.split('?')[0]?.toLowerCase() ?? 'jpg';
   const ext = ['jpg', 'jpeg', 'png', 'pdf', 'heic'].includes(rawExt) ? rawExt : 'jpg';
-  const path = `${locationId}/${CURRENT_USER_ID}/${Date.now()}.${ext}`;
+  const path = `${locationId}/${currentUserId}/${Date.now()}.${ext}`;
   const res = await fetch(uri);
   const blob = await res.blob();
   const { error } = await supabase.storage
@@ -50,13 +48,13 @@ export function useBusinessClaim(
       supabase.from('business_claims')
         .select('status')
         .eq('location_id', locationId)
-        .eq('user_id', CURRENT_USER_ID)
+        .eq('user_id', currentUserId)
         .maybeSingle(),
     ]);
 
     setState({
       isClaimed:          !!ownerInfo,
-      isCurrentUserOwner: ownerInfo?.owner_user_id === CURRENT_USER_ID,
+      isCurrentUserOwner: ownerInfo?.owner_user_id === currentUserId,
       ownerInfo: ownerInfo ? {
         description: ownerInfo.description,
         hours:       ownerInfo.hours,
@@ -111,7 +109,7 @@ export function useBusinessClaim(
       await supabase.from('business_claims').upsert(
         {
           location_id:          locationId,
-          user_id:              CURRENT_USER_ID,
+          user_id:              currentUserId,
           owner_name:           ownerName,
           owner_email:          ownerEmail,
           business_role:        role,
@@ -128,7 +126,7 @@ export function useBusinessClaim(
         await supabase.from('business_owner_info').upsert(
           {
             location_id:   locationId,
-            owner_user_id: CURRENT_USER_ID,
+            owner_user_id: currentUserId,
             is_verified:   true,
             updated_at:    new Date().toISOString(),
           },
@@ -155,7 +153,7 @@ export function useBusinessClaim(
     if (!isSupabaseConfigured) return 'Supabase is not configured yet.';
     try {
       await supabase.from('review_responses').upsert(
-        { review_id: reviewId, owner_user_id: CURRENT_USER_ID, location_id: locationId, content },
+        { review_id: reviewId, owner_user_id: currentUserId, location_id: locationId, content },
         { onConflict: 'review_id' }
       );
       return null;

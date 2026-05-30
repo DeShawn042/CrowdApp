@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { CrowdLevel } from '@/data/mockData';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { currentUserId, isSupabaseConfigured, supabase } from '@/lib/supabase';
 
 const COOLDOWN_MS = 60 * 60 * 1000; // 60 minutes
 const LEVEL_NUMS: Record<CrowdLevel, number> = { empty: 0, light: 1, moderate: 2, packed: 3 };
@@ -10,7 +10,7 @@ interface LastReport {
   createdAt: string;
 }
 
-export function useReportLimit(locationId: string, userId: string = 'u1') {
+export function useReportLimit(locationId: string, userId: string = currentUserId) {
   const [lastReport, setLastReport] = useState<LastReport | null>(null);
   const [cooldownSeconds, setCooldownSeconds] = useState(0);
   const [loading, setLoading] = useState(true);
