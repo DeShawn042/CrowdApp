@@ -171,7 +171,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const submitReport = useCallback(
     async (locationId: string, level: CrowdLevel, comment?: string) => {
-      if (!userId) return;
+      // Check the live Supabase session matches React auth state
+      const { data: { session } } = await supabase.auth.getSession();
+      console.log('[submitReport] userId:', userId ?? 'null');
+      console.log('[submitReport] session user:', session?.user?.id ?? 'NO SESSION');
+      console.log('[submitReport] token present:', !!session?.access_token);
+      if (userId && session?.user?.id && userId !== session.user.id) {
+        console.warn('[submitReport] ⚠️ userId/session mismatch');
+      }
+
+      if (!userId) {
+        console.warn('[submitReport] blocked — not authenticated');
+        return;
+      }
 
       // Optimistic local update so the UI responds instantly
       const optimistic: Report = {
@@ -195,28 +207,42 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         return { ...l, currentCrowd: averageReports(relevant) };
       }));
 
-      if (!isSupabaseConfigured) return;
+      if (!isSupabaseConfigured) {
+        console.warn('submitReport: blocked — isSupabaseConfigured is false');
+        return;
+      }
 
       try {
         const isFlaggedUser = await getOutlierFlag(locationId, userId, level);
-        const { error } = await supabase.from('crowd_reports').insert({
+
+        const payload = {
           location_id:     locationId,
           user_id:         userId,
           user_name:       userName,
           crowd_level:     level,
           comment:         comment ?? null,
           is_flagged_user: isFlaggedUser,
-        });
+        };
+        console.log('submitReport: inserting payload:', payload);
 
-        if (error) {
-          console.warn('submitReport:', error.message);
-          return;
-        }
+        const { data, error, status, statusText } = await supabase
+          .from('crowd_reports')
+          .insert(payload)
+          .select();
 
+        console.log('submitReport: response status:', status, statusText);
+        console.log('submitReport: data:', data);
+        console.log('submitReport: error:', error
+          ? `${error.code} — ${error.message} | hint: ${error.hint}`
+          : 'none');
+
+        if (error) return;
+
+        console.log('submitReport: ✅ insert succeeded, refreshing...');
         await loadRecentReports();
         await loadMyReports(userId);
       } catch (err) {
-        console.warn('submitReport failed:', err);
+        console.error('submitReport: unexpected exception:', err);
       }
     },
     [reports, userId, userName, loadRecentReports, loadMyReports]
