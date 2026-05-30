@@ -209,11 +209,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         });
 
         if (error) {
-          console.warn('submitReport Supabase error:', error.message);
+          console.warn('submitReport:', error.message);
           return;
         }
 
-        // Replace optimistic data with canonical Supabase data
         await loadRecentReports();
         await loadMyReports(userId);
       } catch (err) {
