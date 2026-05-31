@@ -130,8 +130,9 @@ function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): nu
 }
 
 function formatDistance(km: number): string {
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1)} km`;
+  const miles = km * 0.621371;
+  if (miles < 0.1) return `${Math.round(miles * 5280)} ft`;
+  return `${miles.toFixed(1)} mi`;
 }
 
 function currentBusyHoursIndex(): number {
@@ -369,12 +370,13 @@ async function reverseGeocode(lat: number, lng: number): Promise<string> {
 }
 
 const DISTANCE_SORT = (a: Location, b: Location) => {
-  const toKm = (d: string) => {
+  const toMi = (d: string) => {
     if (!d) return Infinity;
     const n = parseFloat(d);
-    return d.includes('m') && !d.includes('km') ? n / 1000 : n;
+    if (d.includes('ft')) return n / 5280;
+    return n; // already in miles
   };
-  return toKm(a.distance) - toKm(b.distance);
+  return toMi(a.distance) - toMi(b.distance);
 };
 
 /**
