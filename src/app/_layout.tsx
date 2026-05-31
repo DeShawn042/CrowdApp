@@ -16,6 +16,10 @@ export default function RootLayout() {
             options={{ headerShown: false, animation: 'slide_from_right' }}
           />
           <Stack.Screen
+            name="location/reviews/[id]"
+            options={{ headerShown: false, animation: 'slide_from_right' }}
+          />
+          <Stack.Screen
             name="submit/[id]"
             options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_bottom' }}
           />

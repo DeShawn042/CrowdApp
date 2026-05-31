@@ -1,0 +1,114 @@
+import { router, useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import GoogleReviewCard from '@/components/GoogleReviewCard';
+import StarRating from '@/components/StarRating';
+import { COLORS } from '@/constants/crowdColors';
+import { useAppContext } from '@/context/AppContext';
+
+export default function GoogleReviewsScreen() {
+  const { id } = useLocalSearchParams<{ id: string }>();
+  const { getLocationById } = useAppContext();
+  const location = getLocationById(id ?? '');
+
+  if (!location) {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <Pressable style={styles.backBtn} onPress={() => router.back()}>
+          <Text style={styles.backText}>‹ Back</Text>
+        </Pressable>
+        <View style={styles.center}>
+          <Text style={styles.errorText}>Location not found.</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
+  const reviews = location.googleReviews ?? [];
+
+  return (
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Header */}
+      <View style={styles.header}>
+        <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
+          <Text style={styles.backText}>‹ Back</Text>
+        </Pressable>
+      </View>
+
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}>
+
+        {/* Location name */}
+        <Text style={styles.locationName} numberOfLines={2}>{location.name}</Text>
+
+        {/* Rating summary */}
+        <View style={styles.summaryCard}>
+          <View style={styles.googleBadgeRow}>
+            <View style={styles.googleBadge}>
+              <Text style={styles.googleBadgeText}>G</Text>
+            </View>
+            <Text style={styles.summaryLabel}>Google Reviews</Text>
+          </View>
+          <View style={styles.ratingRow}>
+            <Text style={styles.ratingNumber}>{location.rating.toFixed(1)}</Text>
+            <View style={styles.ratingRight}>
+              <StarRating rating={location.rating} size={18} />
+              {location.googleReviewCount ? (
+                <Text style={styles.reviewCount}>
+                  {location.googleReviewCount.toLocaleString()} reviews
+                </Text>
+              ) : null}
+            </View>
+          </View>
+        </View>
+
+        {/* Review cards */}
+        {reviews.length === 0 ? (
+          <View style={styles.empty}>
+            <Text style={styles.emptyEmoji}>💬</Text>
+            <Text style={styles.emptyText}>No preview reviews available from Google.</Text>
+          </View>
+        ) : (
+          <View style={styles.listCard}>
+            {reviews.map((r, i) => (
+              <GoogleReviewCard key={i} review={r} />
+            ))}
+          </View>
+        )}
+
+      </ScrollView>
+    </SafeAreaView>
+  );
+}
+
+const styles = StyleSheet.create({
+  safe:           { flex: 1, backgroundColor: COLORS.bg },
+  header:         { paddingHorizontal: 20, paddingVertical: 12 },
+  backBtn:        { paddingVertical: 4, alignSelf: 'flex-start' },
+  backText:       { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
+  scroll:         { flex: 1 },
+  content:        { padding: 20, paddingTop: 4, gap: 20, paddingBottom: 60 },
+  center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  errorText:      { color: COLORS.textMuted, fontSize: 15 },
+
+  locationName:   { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
+
+  summaryCard:    { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, gap: 14, borderWidth: 1, borderColor: COLORS.border },
+  googleBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', alignItems: 'center', justifyContent: 'center' },
+  googleBadgeText:{ color: '#fff', fontSize: 12, fontWeight: '800' },
+  summaryLabel:   { color: COLORS.textSec, fontSize: 13, fontWeight: '600' },
+
+  ratingRow:      { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  ratingNumber:   { color: COLORS.text, fontSize: 42, fontWeight: '800', lineHeight: 48 },
+  ratingRight:    { gap: 6 },
+  reviewCount:    { color: COLORS.textMuted, fontSize: 13 },
+
+  listCard:       { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border },
+  empty:          { alignItems: 'center', paddingVertical: 48, gap: 10 },
+  emptyEmoji:     { fontSize: 36 },
+  emptyText:      { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
+});

@@ -7,7 +7,6 @@ import ClaimModal from '@/components/ClaimModal';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import LocationPhoto from '@/components/LocationPhoto';
 import OwnerResponseModal from '@/components/OwnerResponseModal';
-import GoogleReviewCard from '@/components/GoogleReviewCard';
 import ReportCard from '@/components/ReportCard';
 import ReviewCard from '@/components/ReviewCard';
 import ReviewForm from '@/components/ReviewForm';
@@ -324,39 +323,21 @@ export default function LocationDetailScreen() {
           )}
         </View>
 
-        {/* Google Reviews */}
-        {((location.googleReviews?.length ?? 0) > 0 || location.rating > 0) && (
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <View style={styles.googleBadgeRow}>
-                <Text style={styles.sectionTitle}>Google Reviews</Text>
-                <View style={styles.googleBadge}>
-                  <Text style={styles.googleBadgeText}>G</Text>
-                </View>
-              </View>
-              {location.rating > 0 && (
-                <View style={styles.avgRow}>
-                  <StarRating rating={location.rating} size={14} />
-                  <Text style={styles.avgText}>
-                    {location.rating.toFixed(1)}
-                    {location.googleReviewCount ? ` (${location.googleReviewCount.toLocaleString()})` : ''}
-                  </Text>
-                </View>
-              )}
+        {/* Google Reviews — compact tappable row */}
+        {location.rating > 0 && (
+          <Pressable
+            style={({ pressed }) => [styles.googleRow, pressed && { opacity: 0.75 }]}
+            onPress={() => router.push(`/location/reviews/${location.id}`)}>
+            <View style={styles.googleBadge}>
+              <Text style={styles.googleBadgeText}>G</Text>
             </View>
-
-            {(location.googleReviews?.length ?? 0) > 0 ? (
-              <View style={styles.listCard}>
-                {(location.googleReviews ?? []).map((r, i) => (
-                  <GoogleReviewCard key={i} review={r} />
-                ))}
-              </View>
-            ) : (
-              <View style={styles.emptyCard}>
-                <Text style={styles.emptySub}>No preview reviews available from Google.</Text>
-              </View>
-            )}
-          </View>
+            <StarRating rating={location.rating} size={14} />
+            <Text style={styles.googleRowText}>
+              {location.rating.toFixed(1)}
+              {location.googleReviewCount ? ` · ${location.googleReviewCount.toLocaleString()} reviews` : ''}
+            </Text>
+            <Text style={styles.googleRowChevron}>›</Text>
+          </Pressable>
         )}
 
         {/* CrowdApp Reviews */}
@@ -518,11 +499,11 @@ const styles = StyleSheet.create({
   section:         { gap: 14 },
   sectionHeader:   { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle:    { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  googleBadgeRow:  { flexDirection: 'row', alignItems: 'center', gap: 8 },
+  googleRow:       { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 14, borderWidth: 1, borderColor: COLORS.border },
   googleBadge:     { width: 20, height: 20, borderRadius: 10, backgroundColor: '#4285F4', alignItems: 'center', justifyContent: 'center' },
   googleBadgeText: { color: '#fff', fontSize: 11, fontWeight: '800' },
-  avgRow:          { flexDirection: 'row', alignItems: 'center', gap: 6 },
-  avgText:         { color: COLORS.textMuted, fontSize: 12 },
+  googleRowText:   { flex: 1, color: COLORS.textSec, fontSize: 14, fontWeight: '500' },
+  googleRowChevron:{ color: COLORS.textMuted, fontSize: 20 },
   writeReviewBtn:  { backgroundColor: COLORS.card, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary + '50', borderStyle: 'dashed' },
   writeReviewText: { color: COLORS.primary, fontSize: 15, fontWeight: '600' },
   listCard:        { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border },
