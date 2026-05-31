@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import HeadingThereCard from '@/components/HeadingThereCard';
 import TrendingCard from '@/components/TrendingCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
@@ -27,7 +28,11 @@ function getGreeting() {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport } = useAppContext();
+  const {
+    locations, savedLocationIds, recentLocationIds,
+    addRecentLocation, submitReport,
+    activeDestination, clearActiveDestination,
+  } = useAppContext();
 
   const { trending, loading: trendingLoading } = useTrending(locations);
   const isLive = trending.some(t => t.recentReports > 0);
@@ -43,12 +48,24 @@ export default function HomeScreen() {
     setup();
   }, []);
 
+  // Auto-clear if destination has expired
+  useEffect(() => {
+    if (activeDestination && new Date(activeDestination.expiresAt) < new Date()) {
+      clearActiveDestination();
+    }
+  }, [activeDestination, clearActiveDestination]);
+
   const favoriteLocations = useMemo<TrendingLocation[]>(
     () => savedLocationIds.slice(0, 6).flatMap(id => {
       const loc = locations.find(l => l.id === id);
       return loc ? [{ ...loc, recentReports: 0 }] : [];
     }),
     [savedLocationIds, locations],
+  );
+
+  const destinationLocation = useMemo(
+    () => activeDestination ? locations.find(l => l.id === activeDestination.placeId) : undefined,
+    [activeDestination, locations],
   );
 
   function handleLocationPress(id: string) {
@@ -68,6 +85,20 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{getGreeting()},</Text>
           <Text style={styles.userName}>{user?.name ?? 'there'} 👋</Text>
         </View>
+
+        {/* Heading There */}
+        {activeDestination && new Date(activeDestination.expiresAt) > new Date() && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>🚗  Heading There</Text>
+            <HeadingThereCard
+              destination={activeDestination}
+              locationType={destinationLocation?.type}
+              crowdLevel={destinationLocation?.currentCrowd}
+              onPress={() => handleLocationPress(activeDestination.placeId)}
+              onRemove={clearActiveDestination}
+            />
+          </View>
+        )}
 
         {/* Trending */}
         <View style={styles.section}>

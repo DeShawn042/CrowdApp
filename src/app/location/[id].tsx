@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusyTimesChart from '@/components/BusyTimesChart';
 import ClaimModal from '@/components/ClaimModal';
@@ -33,6 +33,7 @@ export default function LocationDetailScreen() {
   const {
     getLocationById, getReportsForLocation, savedLocationIds,
     toggleSaved, registerLocation, userLocation,
+    activeDestination, setHeadingThere, clearActiveDestination,
   } = useAppContext();
 
   // ── Location resolution ─────────────────────────────────────
@@ -84,6 +85,11 @@ export default function LocationDetailScreen() {
   const [respondTarget,   setRespondTarget]   = useState<Review | null>(null);
   const [mapOptions,      setMapOptions]      = useState<MapOption[]>([]);
   const [showMapChooser,  setShowMapChooser]  = useState(false);
+  const [toastVisible,    setToastVisible]    = useState(false);
+  const [toastMsg,        setToastMsg]        = useState('');
+  const toastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const isHeadingThere = activeDestination?.placeId === (id ?? '');
 
   const currentHour = new Date().getHours();
 
@@ -136,6 +142,44 @@ export default function LocationDetailScreen() {
     });
   }
 
+  function showToast(msg: string) {
+    setToastMsg(msg);
+    setToastVisible(true);
+    if (toastTimer.current) clearTimeout(toastTimer.current);
+    toastTimer.current = setTimeout(() => setToastVisible(false), 3000);
+  }
+
+  async function doSetHeadingThere() {
+    await setHeadingThere(location!, photoUrl ?? undefined);
+    showToast('Added to your home screen for 4 hours');
+  }
+
+  function handleHeadingThere() {
+    if (isHeadingThere) {
+      Alert.alert(
+        'Remove destination?',
+        `Remove ${location!.name} from your home screen?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Remove', style: 'destructive', onPress: () => clearActiveDestination() },
+        ],
+      );
+      return;
+    }
+    if (activeDestination && activeDestination.placeId !== (id ?? '')) {
+      Alert.alert(
+        'Replace current destination?',
+        `You're already heading to ${activeDestination.placeName}. Replace it with ${location!.name}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          { text: 'Replace', onPress: doSetHeadingThere },
+        ],
+      );
+      return;
+    }
+    doSetHeadingThere();
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       {/* Header */}
@@ -146,6 +190,14 @@ export default function LocationDetailScreen() {
         <View style={styles.headerActions}>
           <Pressable onPress={handleShare} hitSlop={12}>
             <Text style={styles.headerIcon}>📤</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleHeadingThere}
+            hitSlop={8}
+            style={[styles.headingBtn, isHeadingThere && styles.headingBtnActive]}>
+            <Text style={[styles.headingBtnText, isHeadingThere && styles.headingBtnTextActive]}>
+              {isHeadingThere ? '✓ Going' : '🚗 Going'}
+            </Text>
           </Pressable>
           <Pressable onPress={() => toggleSaved(location.id)} hitSlop={12}>
             <Text style={styles.headerIcon}>{isSaved ? '❤️' : '🤍'}</Text>
@@ -437,6 +489,12 @@ export default function LocationDetailScreen() {
           onSubmit={content => claim.submitOwnerResponse(respondTarget.id, content)}
         />
       )}
+
+      {toastVisible && (
+        <View style={styles.toast} pointerEvents="none">
+          <Text style={styles.toastText}>{toastMsg}</Text>
+        </View>
+      )}
     </SafeAreaView>
   );
 }
@@ -525,4 +583,27 @@ const styles = StyleSheet.create({
   claimPendingIcon: { fontSize: 24 },
   claimPendingTitle: { color: '#F59E0B', fontSize: 15, fontWeight: '700' },
   claimPendingSub: { color: COLORS.textMuted, fontSize: 12, marginTop: 2 },
+  headingBtn:         { backgroundColor: COLORS.primary + '18', borderRadius: 10, paddingHorizontal: 10, paddingVertical: 5, borderWidth: 1, borderColor: COLORS.primary + '50' },
+  headingBtnActive:   { backgroundColor: '#22C55E18', borderColor: '#22C55E60' },
+  headingBtnText:     { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
+  headingBtnTextActive: { color: '#22C55E' },
+  toast: {
+    position: 'absolute',
+    bottom: 36,
+    left: 24,
+    right: 24,
+    backgroundColor: '#0F172A',
+    borderRadius: 14,
+    paddingHorizontal: 20,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#22C55E50',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 4 },
+  },
+  toastText: { color: '#22C55E', fontSize: 14, fontWeight: '600', textAlign: 'center' },
 });

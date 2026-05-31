@@ -11,6 +11,18 @@ interface UserLocation {
   lng: number;
 }
 
+export interface ActiveDestination {
+  id: string;
+  placeId: string;
+  placeName: string;
+  placeImage?: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  createdAt: string;
+  expiresAt: string;
+}
+
 interface AppContextValue {
   locations: Location[];
   locationsLoading: boolean;
@@ -19,6 +31,7 @@ interface AppContextValue {
   myReports: Report[];
   savedLocationIds: string[];
   recentLocationIds: string[];
+  activeDestination: ActiveDestination | null;
   getLocationById: (id: string) => Location | undefined;
   getReportsForLocation: (id: string) => Report[];
   submitReport: (locationId: string, level: CrowdLevel, comment?: string) => Promise<void>;
@@ -26,6 +39,8 @@ interface AppContextValue {
   addRecentLocation: (id: string) => void;
   /** Merge a location into the shared store so the detail screen can find it. */
   registerLocation: (location: Location) => void;
+  setHeadingThere: (location: Location, photoUrl?: string) => Promise<void>;
+  clearActiveDestination: () => Promise<void>;
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -84,13 +99,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const userId   = user?.id   ?? null;
   const userName = user?.name ?? 'User';
 
-  const [locations,         setLocations]         = useState<Location[]>([]);
-  const [locationsLoading,  setLocationsLoading]  = useState(true);
-  const [userLocation,      setUserLocation]      = useState<UserLocation | null>(null);
-  const [reports,           setReports]           = useState<Report[]>([]);
-  const [myReports,         setMyReports]         = useState<Report[]>([]);
-  const [savedLocationIds,  setSavedLocationIds]  = useState<string[]>([]);
-  const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
+  const [locations,           setLocations]           = useState<Location[]>([]);
+  const [locationsLoading,    setLocationsLoading]    = useState(true);
+  const [userLocation,        setUserLocation]        = useState<UserLocation | null>(null);
+  const [reports,             setReports]             = useState<Report[]>([]);
+  const [myReports,           setMyReports]           = useState<Report[]>([]);
+  const [savedLocationIds,    setSavedLocationIds]    = useState<string[]>([]);
+  const [recentLocationIds,   setRecentLocationIds]   = useState<string[]>([]);
+  const [activeDestination,   setActiveDestinationState] = useState<ActiveDestination | null>(null);
 
   // ── Loaders ────────────────────────────────────────────────
 
@@ -147,6 +163,36 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSavedLocationIds((data ?? []).map((f: any) => f.location_id));
   }, []);
 
+  const loadActiveDestination = useCallback(async (uid: string) => {
+    if (!isSupabaseConfigured) return;
+    const now = new Date().toISOString();
+    const { data, error } = await supabase
+      .from('active_destinations')
+      .select('*')
+      .eq('user_id', uid)
+      .gt('expires_at', now)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (error) { console.warn('loadActiveDestination:', error.message); return; }
+    if (data) {
+      setActiveDestinationState({
+        id:         data.id,
+        placeId:    data.place_id,
+        placeName:  data.place_name,
+        placeImage: data.place_image ?? undefined,
+        address:    data.address ?? '',
+        latitude:   data.latitude,
+        longitude:  data.longitude,
+        createdAt:  data.created_at,
+        expiresAt:  data.expires_at,
+      });
+    } else {
+      setActiveDestinationState(null);
+    }
+  }, []);
+
   // ── Effects ────────────────────────────────────────────────
 
   // On mount: get user location → fetch nearby places → load reports
@@ -181,11 +227,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (!userId) {
       setMyReports([]);
       setSavedLocationIds([]);
+      setActiveDestinationState(null);
       return;
     }
     loadMyReports(userId);
     loadFavorites(userId);
-  }, [userId, loadMyReports, loadFavorites]);
+    loadActiveDestination(userId);
+  }, [userId, loadMyReports, loadFavorites, loadActiveDestination]);
 
   // ── Context methods ────────────────────────────────────────
 
@@ -315,13 +363,74 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setLocations(prev => prev.some(l => l.id === loc.id) ? prev : [...prev, loc]);
   }, []);
 
+  const setHeadingThere = useCallback(async (location: Location, photoUrl?: string) => {
+    if (!userId) return;
+
+    const optimistic: ActiveDestination = {
+      id:         `opt-${Date.now()}`,
+      placeId:    location.id,
+      placeName:  location.name,
+      placeImage: photoUrl,
+      address:    location.address,
+      latitude:   location.coordinates.lat,
+      longitude:  location.coordinates.lng,
+      createdAt:  new Date().toISOString(),
+      expiresAt:  new Date(Date.now() + 4 * 60 * 60 * 1000).toISOString(),
+    };
+    setActiveDestinationState(optimistic);
+
+    if (!isSupabaseConfigured) return;
+
+    await supabase.from('active_destinations').delete().eq('user_id', userId);
+
+    const { data, error } = await supabase
+      .from('active_destinations')
+      .insert({
+        user_id:     userId,
+        place_id:    location.id,
+        place_name:  location.name,
+        place_image: photoUrl ?? null,
+        address:     location.address,
+        latitude:    location.coordinates.lat,
+        longitude:   location.coordinates.lng,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      console.warn('setHeadingThere:', error.message);
+      setActiveDestinationState(null);
+      return;
+    }
+
+    setActiveDestinationState({
+      id:         data.id,
+      placeId:    data.place_id,
+      placeName:  data.place_name,
+      placeImage: data.place_image ?? undefined,
+      address:    data.address ?? '',
+      latitude:   data.latitude,
+      longitude:  data.longitude,
+      createdAt:  data.created_at,
+      expiresAt:  data.expires_at,
+    });
+  }, [userId]);
+
+  const clearActiveDestination = useCallback(async () => {
+    setActiveDestinationState(null);
+    if (!isSupabaseConfigured || !userId) return;
+    await supabase.from('active_destinations').delete().eq('user_id', userId);
+  }, [userId]);
+
   return (
     <AppContext.Provider value={{
       locations, locationsLoading, userLocation,
       reports, myReports,
       savedLocationIds, recentLocationIds,
+      activeDestination,
       getLocationById, getReportsForLocation,
       submitReport, toggleSaved, addRecentLocation, registerLocation,
+      setHeadingThere, clearActiveDestination,
     }}>
       {children}
     </AppContext.Provider>
