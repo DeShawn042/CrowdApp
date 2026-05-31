@@ -263,29 +263,56 @@ export async function searchNearby(
   lng: number,
   radiusMeters = 3000,
   overrideTypes?: string[],
+  keyword?: string,
 ): Promise<Location[]> {
   if (!API_KEY) return [];
   try {
+    const body: Record<string, any> = {
+      includedTypes: overrideTypes ?? HOME_FEED_TYPES,
+      maxResultCount: 20,
+      locationRestriction: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: radiusMeters,
+        },
+      },
+    };
+
+    // Keyword widens the net to catch places Google miscategorised
+    if (keyword) body.textQuery = keyword;
+
+    console.log('[searchNearby] params:', {
+      types: body.includedTypes,
+      radius: radiusMeters,
+      keyword: keyword ?? null,
+    });
+
     const res = await fetch(`${BASE}:searchNearby`, {
       method: 'POST',
       headers: placesHeaders(),
-      body: JSON.stringify({
-        includedTypes: overrideTypes ?? HOME_FEED_TYPES,
-        maxResultCount: 20,
-        locationRestriction: {
-          circle: {
-            center: { latitude: lat, longitude: lng },
-            radius: radiusMeters,
-          },
-        },
-      }),
+      body: JSON.stringify(body),
     });
     if (!res.ok) {
       console.warn('searchNearby HTTP error:', res.status, await res.text());
       return [];
     }
     const data = await res.json();
-    return (data.places ?? []).map((p: any) => mapGooglePlace(p, lat, lng));
+
+    const results: Location[] = (data.places ?? []).map((p: any) =>
+      mapGooglePlace(p, lat, lng),
+    );
+
+    // Sort by numeric distance (strip units, convert m → km for comparison)
+    results.sort((a, b) => {
+      const toKm = (d: string) => {
+        if (!d) return Infinity;
+        const n = parseFloat(d);
+        return d.includes('m') && !d.includes('km') ? n / 1000 : n;
+      };
+      return toKm(a.distance) - toKm(b.distance);
+    });
+
+    return results;
   } catch (err) {
     console.error('searchNearby:', err);
     return [];
