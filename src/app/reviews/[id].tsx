@@ -29,7 +29,6 @@ export default function GoogleReviewsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      {/* Header */}
       <View style={styles.header}>
         <Pressable onPress={() => router.back()} style={styles.backBtn} hitSlop={12}>
           <Text style={styles.backText}>‹ Back</Text>
@@ -41,10 +40,8 @@ export default function GoogleReviewsScreen() {
         contentContainerStyle={styles.content}
         showsVerticalScrollIndicator={false}>
 
-        {/* Location name */}
         <Text style={styles.locationName} numberOfLines={2}>{location.name}</Text>
 
-        {/* Rating summary */}
         <View style={styles.summaryCard}>
           <View style={styles.googleBadgeRow}>
             <View style={styles.googleBadge}>
@@ -65,7 +62,6 @@ export default function GoogleReviewsScreen() {
           </View>
         </View>
 
-        {/* Review cards */}
         {reviews.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>💬</Text>
@@ -93,20 +89,16 @@ const styles = StyleSheet.create({
   content:        { padding: 20, paddingTop: 4, gap: 20, paddingBottom: 60 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
   errorText:      { color: COLORS.textMuted, fontSize: 15 },
-
   locationName:   { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
-
   summaryCard:    { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, gap: 14, borderWidth: 1, borderColor: COLORS.border },
   googleBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', alignItems: 'center', justifyContent: 'center' },
   googleBadgeText:{ color: '#fff', fontSize: 12, fontWeight: '800' },
   summaryLabel:   { color: COLORS.textSec, fontSize: 13, fontWeight: '600' },
-
   ratingRow:      { flexDirection: 'row', alignItems: 'center', gap: 14 },
   ratingNumber:   { color: COLORS.text, fontSize: 42, fontWeight: '800', lineHeight: 48 },
   ratingRight:    { gap: 6 },
   reviewCount:    { color: COLORS.textMuted, fontSize: 13 },
-
   listCard:       { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border },
   empty:          { alignItems: 'center', paddingVertical: 48, gap: 10 },
   emptyEmoji:     { fontSize: 36 },

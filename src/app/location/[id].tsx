@@ -327,7 +327,7 @@ export default function LocationDetailScreen() {
         {location.rating > 0 && (
           <Pressable
             style={({ pressed }) => [styles.googleRow, pressed && { opacity: 0.75 }]}
-            onPress={() => router.push(`/location/reviews/${location.id}`)}>
+            onPress={() => router.push(`/reviews/${location.id}`)}>
             <View style={styles.googleBadge}>
               <Text style={styles.googleBadgeText}>G</Text>
             </View>

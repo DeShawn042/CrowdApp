@@ -16,7 +16,7 @@ export default function RootLayout() {
             options={{ headerShown: false, animation: 'slide_from_right' }}
           />
           <Stack.Screen
-            name="location/reviews/[id]"
+            name="reviews/[id]"
             options={{ headerShown: false, animation: 'slide_from_right' }}
           />
           <Stack.Screen
