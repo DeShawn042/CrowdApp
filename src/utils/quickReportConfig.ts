@@ -8,7 +8,10 @@ export type ReportType =
   | 'cover_charge'
   | 'parking'
   | 'cleanliness'
-  | 'wait_time';
+  | 'wait_time'
+  | 'security_line'
+  | 'tsa_precheck'
+  | 'baggage_dropoff';
 
 export interface QuickReportConfig {
   type: ReportType;
@@ -79,10 +82,25 @@ const WAIT_TIME: QuickReportConfig = {
   options: ['No wait', 'Under 15 min', '15–30 min', '30–45 min', '45+ min'],
 };
 
+// ─── Airport-specific configs ────────────────────────────────────────────────
+
+const SECURITY_LINE: QuickReportConfig = {
+  type: 'security_line', icon: '🔵', label: 'Security Line',
+  options: ['No wait', 'Under 15 min', '15–30 min', '30–45 min', '45–60 min', '60+ min'],
+};
+
+const TSA_PRECHECK: QuickReportConfig = {
+  type: 'tsa_precheck', icon: '✅', label: 'TSA PreCheck',
+  options: ['No wait', 'Under 10 min', '10–20 min', '20–30 min', '30+ min', 'Not available / Closed'],
+};
+
+const BAGGAGE_DROPOFF: QuickReportConfig = {
+  type: 'baggage_dropoff', icon: '🧳', label: 'Bag Drop-off',
+  options: ['No wait', 'Under 15 min', '15–30 min', '30+ min'],
+};
+
 // ─── Category → config list ──────────────────────────────────────────────────
 
-// Maps each LocationType to the ordered list of quick report configs to show.
-// null means "show no quick reports section for this type".
 const CATEGORY_MAP: Record<LocationType, QuickReportConfig[] | null> = {
   restaurant:    [VIBE_RESTAURANT, PRICE, SERVICE_FULL],
   cafe:          [VIBE_RESTAURANT, PRICE, SERVICE_FULL],
@@ -96,33 +114,32 @@ const CATEGORY_MAP: Record<LocationType, QuickReportConfig[] | null> = {
   park:          [VIBE_DEFAULT],
   hotel:         [VIBE_DEFAULT, SERVICE_FULL],
   transit:       [VIBE_DEFAULT],
+  airport:       [SECURITY_LINE, TSA_PRECHECK, BAGGAGE_DROPOFF],
   other:         [VIBE_DEFAULT, SERVICE_FULL],
 };
 
-/**
- * Returns the ordered quick-report configs for a given location type,
- * or null if that category has no quick reports.
- */
 export function getQuickReportConfigs(
   locationType: LocationType,
 ): QuickReportConfig[] | null {
   return CATEGORY_MAP[locationType] ?? [VIBE_DEFAULT, SERVICE_FULL];
 }
 
-/** Icon to show in the active-reports pill row for each report type. */
 export const REPORT_TYPE_ICONS: Record<ReportType, string> = {
-  vibe:         '✨',
-  price:        '💰',
-  service:      '⚡',
-  event:        '🎉',
-  cover_charge: '👮',
-  parking:      '🅿️',
-  cleanliness:  '🧼',
-  wait_time:    '⏱️',
+  vibe:            '✨',
+  price:           '💰',
+  service:         '⚡',
+  event:           '🎉',
+  cover_charge:    '👮',
+  parking:         '🅿️',
+  cleanliness:     '🧼',
+  wait_time:       '⏱️',
+  security_line:   '🔵',
+  tsa_precheck:    '✅',
+  baggage_dropoff: '🧳',
 };
 
-/** All valid report_type values for the Supabase check constraint. */
 export const ALL_REPORT_TYPES: ReportType[] = [
   'vibe', 'price', 'service', 'event',
   'cover_charge', 'parking', 'cleanliness', 'wait_time',
+  'security_line', 'tsa_precheck', 'baggage_dropoff',
 ];

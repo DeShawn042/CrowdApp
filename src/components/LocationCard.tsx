@@ -32,23 +32,6 @@ export default function LocationCard({ location, onPress, showDistance = true }:
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{location.name}</Text>
-          {averageRating !== null ? (
-            // App has reviews — show app average + count
-            <View style={styles.starPill}>
-              <Text style={styles.starChar}>⭐</Text>
-              <Text style={styles.starValue}>{averageRating.toFixed(1)}</Text>
-              <Text style={styles.reviewCount}>{reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}</Text>
-            </View>
-          ) : location.rating > 0 ? (
-            // No app reviews — fall back to Google Places rating
-            <View style={[styles.starPill, styles.googlePill]}>
-              <Text style={styles.starChar}>⭐</Text>
-              <Text style={styles.starValue}>{location.rating.toFixed(1)}</Text>
-              <Text style={styles.googleLabel}>Google</Text>
-            </View>
-          ) : (
-            <Text style={styles.noReviews}>No reviews yet</Text>
-          )}
         </View>
         <Text style={styles.address} numberOfLines={1}>{location.address}</Text>
         <View style={styles.meta}>
@@ -58,6 +41,19 @@ export default function LocationCard({ location, onPress, showDistance = true }:
               {location.reportCount} {location.reportCount === 1 ? 'report' : 'reports'}
             </Text>
           )}
+          {averageRating !== null ? (
+            <View style={styles.starPill}>
+              <Text style={styles.starChar}>⭐</Text>
+              <Text style={styles.starValue}>{averageRating.toFixed(1)}</Text>
+              <Text style={styles.reviewCount}>{reviewCount} {reviewCount === 1 ? 'review' : 'reviews'}</Text>
+            </View>
+          ) : location.rating > 0 ? (
+            <View style={[styles.starPill, styles.googlePill]}>
+              <Text style={styles.starChar}>⭐</Text>
+              <Text style={styles.starValue}>{location.rating.toFixed(1)}</Text>
+              <Text style={styles.googleLabel}>Google</Text>
+            </View>
+          ) : null}
         </View>
       </View>
       <View style={styles.right}>
@@ -92,7 +88,6 @@ const styles = StyleSheet.create({
   starValue:   { color: '#F59E0B', fontSize: 12, fontWeight: '700' },
   reviewCount: { color: COLORS.textMuted, fontSize: 11 },
   googleLabel: { color: '#4285F4', fontSize: 11, fontWeight: '600' },
-  noReviews:   { color: COLORS.textMuted, fontSize: 11 },
   address:   { color: COLORS.textSec, fontSize: 12 },
   meta:      { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' },
   reportCount: { color: COLORS.textMuted, fontSize: 11 },

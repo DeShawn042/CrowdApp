@@ -37,6 +37,7 @@ const CATEGORIES: PlaceCategory[] = [
   { id: 'parks',          label: 'Parks',            emoji: '🌳', types: ['park'],                                                        color: '#16A34A' },
   { id: 'gas',            label: 'Gas Stations',     emoji: '⛽', types: ['gas_station'],                                                 color: '#64748B' },
   { id: 'hotels',         label: 'Hotels',           emoji: '🏨', types: ['lodging'],                                                     color: '#D97706' },
+  { id: 'airports',       label: 'Airports',         emoji: '✈️', types: ['airport'],                                                      color: '#0EA5E9' },
 ];
 
 const CROWD_FILTERS = (['all', 'empty', 'light', 'moderate', 'packed'] as const);

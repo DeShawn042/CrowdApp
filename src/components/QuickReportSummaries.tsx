@@ -268,6 +268,46 @@ const summaryStyles = StyleSheet.create({
   priceSymbol:      { color: COLORS.primary, fontWeight: '800', fontSize: 16 },
 });
 
+// ─── Airport summaries (majority-value status cards) ────────────────────────
+
+function AirportLineSummary({
+  reports,
+  icon,
+  label,
+  minReports = 1,
+}: {
+  reports: QuickReport[];
+  icon: string;
+  label: string;
+  minReports?: number;
+}) {
+  if (reports.length < minReports) return null;
+  const top  = majority(reports);
+  const mins = minutesAgo(reports);
+  if (!top) return null;
+  return (
+    <SummaryCard icon={icon} label={label} count={reports.length} updatedMins={mins}>
+      <Text style={airportStyles.statusText}>{top}</Text>
+    </SummaryCard>
+  );
+}
+
+const airportStyles = StyleSheet.create({
+  statusText: { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+});
+
+export function SecurityLineSummary({ reports }: { reports: QuickReport[] }) {
+  return <AirportLineSummary reports={reports} icon="🔵" label="Security Line" />;
+}
+
+export function TSAPreCheckSummary({ reports }: { reports: QuickReport[] }) {
+  return <AirportLineSummary reports={reports} icon="✅" label="TSA PreCheck" />;
+}
+
+export function BaggageDropoffSummary({ reports }: { reports: QuickReport[] }) {
+  return <AirportLineSummary reports={reports} icon="🧳" label="Bag Drop-off" />;
+}
+
 // ─── Orchestrator: picks which summaries to show based on active configs ─────
 
 interface Props {
@@ -279,32 +319,41 @@ interface Props {
 export default function QuickReportSummaries({ reports, priceReports, activeTypes }: Props) {
   const byType = (type: ReportType) => reports.filter(r => r.reportType === type);
 
-  const serviceR     = activeTypes.has('service')      ? byType('service')     : [];
-  const vibeR        = activeTypes.has('vibe')          ? byType('vibe')        : [];
-  const waitR        = activeTypes.has('wait_time')     ? byType('wait_time')   : [];
-  const coverR       = activeTypes.has('cover_charge')  ? byType('cover_charge'): [];
-  const parkingR     = activeTypes.has('parking')       ? byType('parking')     : [];
-  const cleanR       = activeTypes.has('cleanliness')   ? byType('cleanliness') : [];
-  const eventR       = activeTypes.has('event')         ? byType('event')       : [];
+  const serviceR     = activeTypes.has('service')          ? byType('service')         : [];
+  const vibeR        = activeTypes.has('vibe')              ? byType('vibe')            : [];
+  const waitR        = activeTypes.has('wait_time')         ? byType('wait_time')       : [];
+  const coverR       = activeTypes.has('cover_charge')      ? byType('cover_charge')    : [];
+  const parkingR     = activeTypes.has('parking')           ? byType('parking')         : [];
+  const cleanR       = activeTypes.has('cleanliness')       ? byType('cleanliness')     : [];
+  const eventR       = activeTypes.has('event')             ? byType('event')           : [];
+  const securityR    = activeTypes.has('security_line')     ? byType('security_line')   : [];
+  const preCheckR    = activeTypes.has('tsa_precheck')      ? byType('tsa_precheck')    : [];
+  const baggageR     = activeTypes.has('baggage_dropoff')   ? byType('baggage_dropoff') : [];
   const showPrice    = activeTypes.has('price') && priceReports.length >= 2;
 
   const hasAnything =
-    serviceR.length >= 2 || vibeR.length >= 2 || waitR.length >= 2 ||
+    serviceR.length >= 2 || vibeR.length >= 2   || waitR.length >= 2 ||
     coverR.length >= 1   || parkingR.length >= 2 || cleanR.length >= 2 ||
-    eventR.length >= 1   || showPrice;
+    eventR.length >= 1   || showPrice            ||
+    securityR.length >= 1 || preCheckR.length >= 1 || baggageR.length >= 1;
 
   if (!hasAnything) return null;
 
   return (
     <View style={styles.container}>
-      <VibeSummary        reports={vibeR} />
-      <WaitTimeSummary    reports={waitR} />
-      <ServiceSummary     reports={serviceR} />
-      <EventsSummary      reports={eventR} />
-      <CoverChargeSummary reports={coverR} />
-      <ParkingSummary     reports={parkingR} />
+      {/* Standard summaries */}
+      <VibeSummary         reports={vibeR} />
+      <WaitTimeSummary     reports={waitR} />
+      <ServiceSummary      reports={serviceR} />
+      <EventsSummary       reports={eventR} />
+      <CoverChargeSummary  reports={coverR} />
+      <ParkingSummary      reports={parkingR} />
       <CleanlinesssSummary reports={cleanR} />
       {showPrice && <PriceSummary reports={priceReports} />}
+      {/* Airport summaries */}
+      <SecurityLineSummary  reports={securityR} />
+      <TSAPreCheckSummary   reports={preCheckR} />
+      <BaggageDropoffSummary reports={baggageR} />
     </View>
   );
 }
