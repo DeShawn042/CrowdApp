@@ -81,6 +81,10 @@ const TYPE_MAP: Record<string, LocationType> = {
   bus_station:          'transit',
   transit_station:      'transit',
   light_rail_station:   'transit',
+  // Airport — all variants Google Places API may return
+  airport:              'airport',
+  international_airport:'airport',
+  domestic_airport:     'airport',
 };
 
 const DEFAULT_BUSY_HOURS: Record<LocationType, number[]> = {
@@ -97,14 +101,19 @@ const DEFAULT_BUSY_HOURS: Record<LocationType, number[]> = {
   park:          [5,  10, 15, 25, 40, 55, 65, 70, 70, 65, 60, 65, 70, 75, 70, 60, 45, 20],
   hotel:         [30, 25, 20, 20, 25, 40, 55, 70, 65, 60, 55, 60, 65, 70, 65, 60, 55, 45],
   transit:       [20, 25, 40, 70, 80, 75, 55, 45, 40, 45, 55, 70, 80, 75, 60, 45, 35, 25],
+  airport:       [30, 40, 60, 80, 85, 80, 70, 65, 65, 70, 75, 80, 85, 80, 75, 70, 60, 40],
   other:         [20, 25, 30, 40, 50, 55, 60, 60, 55, 50, 50, 55, 60, 60, 55, 45, 35, 20],
 };
 
 function getLocationType(types: string[]): LocationType {
   for (const t of types) {
     const mapped = TYPE_MAP[t];
-    if (mapped) return mapped;
+    if (mapped) {
+      console.log('[getLocationType] matched:', t, '→', mapped, '| all types:', types);
+      return mapped;
+    }
   }
+  console.log('[getLocationType] no match → other | all types:', types);
   return 'other';
 }
 
