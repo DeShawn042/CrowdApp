@@ -302,17 +302,7 @@ export async function searchNearby(
       mapGooglePlace(p, lat, lng),
     );
 
-    // Sort by numeric distance (strip units, convert m → km for comparison)
-    results.sort((a, b) => {
-      const toKm = (d: string) => {
-        if (!d) return Infinity;
-        const n = parseFloat(d);
-        return d.includes('m') && !d.includes('km') ? n / 1000 : n;
-      };
-      return toKm(a.distance) - toKm(b.distance);
-    });
-
-    return results;
+    return results.sort(DISTANCE_SORT);
   } catch (err) {
     console.error('searchNearby:', err);
     return [];
@@ -348,6 +338,90 @@ export async function searchText(
     return (data.places ?? []).map((p: any) => mapGooglePlace(p, userLat, userLng));
   } catch (err) {
     console.error('searchText:', err);
+    return [];
+  }
+}
+
+/**
+ * Reverse-geocode coordinates to a city/region string using the
+ * Geocoding API. Falls back to an empty string on any failure so
+ * the caller can still build a usable query.
+ */
+async function reverseGeocode(lat: number, lng: number): Promise<string> {
+  if (!API_KEY) return '';
+  try {
+    const url =
+      `https://maps.googleapis.com/maps/api/geocode/json` +
+      `?latlng=${lat},${lng}&result_type=locality|administrative_area_level_1&key=${API_KEY}`;
+    const res = await fetch(url);
+    if (!res.ok) return '';
+    const data = await res.json();
+    const result = data.results?.[0];
+    if (!result) return '';
+    // Prefer "locality" (city), fall back to first address component
+    const locality = result.address_components?.find((c: any) =>
+      c.types.includes('locality'),
+    );
+    return locality?.long_name ?? result.address_components?.[0]?.long_name ?? '';
+  } catch {
+    return '';
+  }
+}
+
+const DISTANCE_SORT = (a: Location, b: Location) => {
+  const toKm = (d: string) => {
+    if (!d) return Infinity;
+    const n = parseFloat(d);
+    return d.includes('m') && !d.includes('km') ? n / 1000 : n;
+  };
+  return toKm(a.distance) - toKm(b.distance);
+};
+
+/**
+ * Airport-specific search using Text Search (not Nearby Search).
+ * Nearby Search does not support airport sub-types and returns no results.
+ * Text Search with a wide location bias reliably returns airports within ~100 km.
+ */
+export async function searchAirports(
+  lat: number,
+  lng: number,
+): Promise<Location[]> {
+  if (!API_KEY) return [];
+  try {
+    const city    = await reverseGeocode(lat, lng);
+    const query   = city ? `airports near ${city}` : 'airports';
+    console.log('[searchAirports] query:', query, '| coords:', lat, lng);
+
+    const body = {
+      textQuery:    query,
+      maxResultCount: 10,
+      locationBias: {
+        circle: {
+          center: { latitude: lat, longitude: lng },
+          radius: 100000, // 100 km
+        },
+      },
+    };
+
+    const res = await fetch(`${BASE}:searchText`, {
+      method:  'POST',
+      headers: placesHeaders(),
+      body:    JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      console.warn('searchAirports HTTP error:', res.status, await res.text());
+      return [];
+    }
+
+    const data = await res.json();
+    const results: Location[] = (data.places ?? []).map((p: any) =>
+      mapGooglePlace(p, lat, lng),
+    );
+
+    return results.sort(DISTANCE_SORT);
+  } catch (err) {
+    console.error('searchAirports:', err);
     return [];
   }
 }

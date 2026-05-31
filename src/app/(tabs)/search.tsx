@@ -14,7 +14,7 @@ import LocationCard from '@/components/LocationCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
 import { Location } from '@/data/mockData';
-import { searchNearby, searchText } from '@/utils/googlePlaces';
+import { searchAirports, searchNearby, searchText } from '@/utils/googlePlaces';
 import { CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
 
 interface PlaceCategory {
@@ -24,7 +24,6 @@ interface PlaceCategory {
   types: string[];
   color: string;
   radiusMeters?: number; // override default search radius
-  keyword?: string;      // extra keyword to widen Google Places results
 }
 
 const CATEGORIES: PlaceCategory[] = [
@@ -39,7 +38,7 @@ const CATEGORIES: PlaceCategory[] = [
   { id: 'parks',          label: 'Parks',            emoji: '🌳', types: ['park'],                                                        color: '#16A34A' },
   { id: 'gas',            label: 'Gas Stations',     emoji: '⛽', types: ['gas_station'],                                                 color: '#64748B' },
   { id: 'hotels',         label: 'Hotels',           emoji: '🏨', types: ['lodging'],                                                     color: '#D97706' },
-  { id: 'airports',       label: 'Airports',         emoji: '✈️', types: ['airport', 'international_airport', 'domestic_airport'],       color: '#0EA5E9', radiusMeters: 50000, keyword: 'airport' },
+  { id: 'airports',       label: 'Airports',         emoji: '✈️', types: ['airport'],                                                      color: '#0EA5E9' },
 ];
 
 const CROWD_FILTERS = (['all', 'empty', 'light', 'moderate', 'packed'] as const);
@@ -88,7 +87,9 @@ export default function SearchScreen() {
     setSelectedCategory(cat);
     setCategoryResults([]);
     setCategorySearching(true);
-    const results = await searchNearby(userLocation.lat, userLocation.lng, cat.radiusMeters ?? 3000, cat.types, cat.keyword);
+    const results = cat.id === 'airports'
+      ? await searchAirports(userLocation.lat, userLocation.lng)
+      : await searchNearby(userLocation.lat, userLocation.lng, cat.radiusMeters ?? 3000, cat.types);
     setCategoryResults(results);
     setCategorySearching(false);
   }, [userLocation]);
