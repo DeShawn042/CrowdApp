@@ -23,10 +23,12 @@ import MapChooserModal from '@/components/MapChooserModal';
 import QuickReportsSection from '@/components/QuickReportsSection';
 import QuickReportSummaries from '@/components/QuickReportSummaries';
 import Toast from '@/components/Toast';
+import WatchlistSheet from '@/components/WatchlistSheet';
 import { openMapSheet } from '@/hooks/useMapLink';
 import type { MapOption } from '@/hooks/useMapLink';
 import { useQuickReports } from '@/hooks/useQuickReports';
 import { useHeadingThere } from '@/hooks/useHeadingThere';
+import { useWatchlist } from '@/hooks/useWatchlist';
 import { getQuickReportConfigs } from '@/utils/quickReportConfig';
 import type { Location, Review } from '@/data/mockData';
 
@@ -81,9 +83,11 @@ export default function LocationDetailScreen() {
 
   const quickReports = useQuickReports(id ?? '');
   const { destination, setHeadingThere, clearDestination, isHeadingThere } = useHeadingThere();
+  const { addToWatchlist, removeFromWatchlist, isWatching } = useWatchlist();
 
   const [showReviewForm,  setShowReviewForm]  = useState(false);
   const [showToast,       setShowToast]       = useState(false);
+  const [showWatchlist,   setShowWatchlist]   = useState(false);
   const [showClaimModal,  setShowClaimModal]  = useState(false);
   const [respondTarget,   setRespondTarget]   = useState<Review | null>(null);
   const [mapOptions,      setMapOptions]      = useState<MapOption[]>([]);
@@ -198,6 +202,14 @@ export default function LocationDetailScreen() {
           </Pressable>
           <Pressable onPress={() => toggleSaved(location.id)} hitSlop={12}>
             <Text style={styles.headerIcon}>{isSaved ? '❤️' : '🤍'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={() => setShowWatchlist(true)}
+            hitSlop={12}
+            style={({ pressed }) => [styles.headingBtn, isWatching(location.id) && styles.headingBtnActive, pressed && { opacity: 0.75 }]}>
+            <Text style={styles.headingBtnText}>
+              {isWatching(location.id) ? '👁️ Watching' : '👁️ Watch'}
+            </Text>
           </Pressable>
           <Pressable
             onPress={handleHeadingThere}
@@ -465,6 +477,29 @@ export default function LocationDetailScreen() {
           </Pressable>
         )}
       </ScrollView>
+
+      {/* Watchlist sheet */}
+      <WatchlistSheet
+        visible={showWatchlist}
+        placeName={location.name}
+        currentWatchLevel={isWatching(location.id)?.alertLevel}
+        onClose={() => setShowWatchlist(false)}
+        onSelect={async (level) => {
+          await addToWatchlist({
+            placeId:    location.id,
+            placeName:  location.name,
+            placeImage: photoUrl ?? undefined,
+            address:    location.address,
+            latitude:   location.coordinates.lat,
+            longitude:  location.coordinates.lng,
+            alertLevel: level,
+          });
+        }}
+        onRemove={isWatching(location.id) ? async () => {
+          const item = isWatching(location.id);
+          if (item) await removeFromWatchlist(item.id);
+        } : undefined}
+      />
 
       {/* Toast */}
       <Toast

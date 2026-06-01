@@ -16,6 +16,7 @@ import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useGeofencing } from '@/hooks/useGeofencing';
 import { useHeadingThere } from '@/hooks/useHeadingThere';
+import { useWatchlist } from '@/hooks/useWatchlist';
 import { requestNotificationPermission, setupNotificationCategories, useNotificationResponse } from '@/hooks/useNotifications';
 import { useTrending } from '@/hooks/useTrending';
 import type { TrendingLocation } from '@/hooks/useTrending';
@@ -33,10 +34,12 @@ export default function HomeScreen() {
 
   const { trending, loading: trendingLoading } = useTrending(locations);
   const { destination, clearDestination, reload: reloadDestination } = useHeadingThere();
+  const { items: watchlistItems, reload: reloadWatchlist } = useWatchlist();
 
   useFocusEffect(useCallback(() => {
     reloadDestination();
-  }, [reloadDestination]));
+    reloadWatchlist();
+  }, [reloadDestination, reloadWatchlist]));
   const isLive = trending.some(t => t.recentReports > 0);
 
   useGeofencing([...savedLocationIds, ...recentLocationIds.slice(0, 5)], locations);
@@ -86,6 +89,18 @@ export default function HomeScreen() {
             }}
             onDismiss={clearDestination}
           />
+        )}
+
+        {/* Watchlist indicator */}
+        {watchlistItems.length > 0 && (
+          <Pressable
+            style={({ pressed }) => [styles.watchlistRow, pressed && { opacity: 0.75 }]}
+            onPress={() => router.push('/(tabs)/profile')}>
+            <Text style={styles.watchlistText}>
+              👁️ Watching {watchlistItems.length} {watchlistItems.length === 1 ? 'place' : 'places'}
+            </Text>
+            <Text style={styles.watchlistChevron}>›</Text>
+          </Pressable>
         )}
 
         {/* Trending */}
@@ -171,6 +186,9 @@ const styles = StyleSheet.create({
   greeting: { color: COLORS.textSec, fontSize: 14 },
   userName: { color: COLORS.text, fontSize: 26, fontWeight: '800' },
 
+  watchlistRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border },
+  watchlistText:   { flex: 1, color: COLORS.textSec, fontSize: 14, fontWeight: '600' },
+  watchlistChevron:{ color: COLORS.textMuted, fontSize: 18 },
   section:    { gap: 14 },
   sectionRow: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   sectionTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700' },

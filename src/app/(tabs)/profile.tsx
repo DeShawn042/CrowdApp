@@ -1,16 +1,21 @@
-import { router } from 'expo-router';
-import React from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback } from 'react';
 import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
+import WatchlistCard from '@/components/WatchlistCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
+import { useWatchlist } from '@/hooks/useWatchlist';
 import { formatDate, timeAgo } from '@/utils/crowdUtils';
 
 export default function ProfileScreen() {
   const { user, logout } = useAuth();
   const { myReports, getLocationById } = useAppContext();
+  const { items: watchlistItems, removeFromWatchlist, renewWatchlistItem, reload: reloadWatchlist } = useWatchlist();
+
+  useFocusEffect(useCallback(() => { reloadWatchlist(); }, [reloadWatchlist]));
 
   const initials = (user?.name ?? 'U')
     .split(' ')
@@ -75,6 +80,24 @@ export default function ProfileScreen() {
             <Text style={styles.favName}>{user?.favoriteVenue}</Text>
           </View>
         </View>
+
+        {/* Watchlist */}
+        {watchlistItems.length > 0 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>👁️ Watchlist</Text>
+            <View style={styles.reportList}>
+              {watchlistItems.map(item => (
+                <WatchlistCard
+                  key={item.id}
+                  item={item}
+                  onPress={() => router.push(`/location/${item.placeId}`)}
+                  onRemove={() => removeFromWatchlist(item.id)}
+                  onRenew={() => renewWatchlistItem(item.id)}
+                />
+              ))}
+            </View>
+          </View>
+        )}
 
         {/* Recent reports */}
         <View style={styles.section}>
