@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusyTimesChart from '@/components/BusyTimesChart';
 import ClaimModal from '@/components/ClaimModal';
@@ -22,9 +22,11 @@ import { fetchPlaceDetails } from '@/utils/googlePlaces';
 import MapChooserModal from '@/components/MapChooserModal';
 import QuickReportsSection from '@/components/QuickReportsSection';
 import QuickReportSummaries from '@/components/QuickReportSummaries';
+import Toast from '@/components/Toast';
 import { openMapSheet } from '@/hooks/useMapLink';
 import type { MapOption } from '@/hooks/useMapLink';
 import { useQuickReports } from '@/hooks/useQuickReports';
+import { useHeadingThere } from '@/hooks/useHeadingThere';
 import { getQuickReportConfigs } from '@/utils/quickReportConfig';
 import type { Location, Review } from '@/data/mockData';
 
@@ -78,8 +80,10 @@ export default function LocationDetailScreen() {
   const claim = useBusinessClaim(id ?? '', location?.name, location?.address);
 
   const quickReports = useQuickReports(id ?? '');
+  const { destination, setHeadingThere, isHeadingThere } = useHeadingThere();
 
   const [showReviewForm,  setShowReviewForm]  = useState(false);
+  const [showToast,       setShowToast]       = useState(false);
   const [showClaimModal,  setShowClaimModal]  = useState(false);
   const [respondTarget,   setRespondTarget]   = useState<Review | null>(null);
   const [mapOptions,      setMapOptions]      = useState<MapOption[]>([]);
@@ -126,6 +130,44 @@ export default function LocationDetailScreen() {
   const crowdColor = crowdDisplay.level ? CROWD_COLORS[crowdDisplay.level] : '#4B5563';
   const crowdBg    = crowdDisplay.level ? CROWD_BG_COLORS[crowdDisplay.level] : '#1A1A22';
 
+  async function handleHeadingThere() {
+    if (!location) return;
+    const alreadySet = destination && destination.placeId !== location.id;
+    if (alreadySet) {
+      Alert.alert(
+        'Replace Destination?',
+        `You're currently heading to ${destination!.placeName}. Replace it with ${location.name}?`,
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Replace',
+            onPress: async () => {
+              await setHeadingThere({
+                placeId:    location.id,
+                placeName:  location.name,
+                placeImage: photoUrl ?? undefined,
+                address:    location.address,
+                latitude:   location.coordinates.lat,
+                longitude:  location.coordinates.lng,
+              });
+              setShowToast(true);
+            },
+          },
+        ],
+      );
+      return;
+    }
+    await setHeadingThere({
+      placeId:    location.id,
+      placeName:  location.name,
+      placeImage: photoUrl ?? undefined,
+      address:    location.address,
+      latitude:   location.coordinates.lat,
+      longitude:  location.coordinates.lng,
+    });
+    setShowToast(true);
+  }
+
   async function handleShare() {
     const crowdDesc = crowdDisplay.level
       ? `It's ${CROWD_LABELS[crowdDisplay.level]} at ${location!.name} right now!`
@@ -149,6 +191,14 @@ export default function LocationDetailScreen() {
           </Pressable>
           <Pressable onPress={() => toggleSaved(location.id)} hitSlop={12}>
             <Text style={styles.headerIcon}>{isSaved ? '❤️' : '🤍'}</Text>
+          </Pressable>
+          <Pressable
+            onPress={handleHeadingThere}
+            hitSlop={12}
+            style={({ pressed }) => [styles.headingBtn, isHeadingThere(location.id) && styles.headingBtnActive, pressed && { opacity: 0.75 }]}>
+            <Text style={styles.headingBtnText}>
+              {isHeadingThere(location.id) ? '✓ Heading There' : '🚗 Heading There'}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -409,6 +459,13 @@ export default function LocationDetailScreen() {
         )}
       </ScrollView>
 
+      {/* Toast */}
+      <Toast
+        message="🚗 Added to your home screen for 4 hours"
+        visible={showToast}
+        onHide={() => setShowToast(false)}
+      />
+
       {/* Modals */}
       <MapChooserModal
         visible={showMapChooser}
@@ -446,8 +503,11 @@ const styles = StyleSheet.create({
   header:          { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, paddingVertical: 12 },
   backBtn:         { paddingVertical: 4 },
   backText:        { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  headerActions:   { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  headerActions:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   headerIcon:      { fontSize: 22 },
+  headingBtn:      { backgroundColor: COLORS.card, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 6, borderWidth: 1, borderColor: COLORS.border },
+  headingBtnActive:{ backgroundColor: COLORS.primary + '20', borderColor: COLORS.primary },
+  headingBtnText:  { color: COLORS.text, fontSize: 12, fontWeight: '700' },
   scroll:          { flex: 1 },
   content:         { padding: 20, paddingTop: 0, gap: 20, paddingBottom: 60 },
   notFound:        { flex: 1, alignItems: 'center', justifyContent: 'center' },

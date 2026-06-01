@@ -9,11 +9,13 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import HeadingThereCard from '@/components/HeadingThereCard';
 import TrendingCard from '@/components/TrendingCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useGeofencing } from '@/hooks/useGeofencing';
+import { useHeadingThere } from '@/hooks/useHeadingThere';
 import { requestNotificationPermission, setupNotificationCategories, useNotificationResponse } from '@/hooks/useNotifications';
 import { useTrending } from '@/hooks/useTrending';
 import type { TrendingLocation } from '@/hooks/useTrending';
@@ -30,6 +32,7 @@ export default function HomeScreen() {
   const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport } = useAppContext();
 
   const { trending, loading: trendingLoading } = useTrending(locations);
+  const { destination, clearDestination } = useHeadingThere();
   const isLive = trending.some(t => t.recentReports > 0);
 
   useGeofencing([...savedLocationIds, ...recentLocationIds.slice(0, 5)], locations);
@@ -68,6 +71,18 @@ export default function HomeScreen() {
           <Text style={styles.greeting}>{getGreeting()},</Text>
           <Text style={styles.userName}>{user?.name ?? 'there'} 👋</Text>
         </View>
+
+        {/* Heading There */}
+        {destination && (
+          <HeadingThereCard
+            destination={destination}
+            onPress={() => {
+              addRecentLocation(destination.placeId);
+              router.push(`/location/${destination.placeId}`);
+            }}
+            onDismiss={clearDestination}
+          />
+        )}
 
         {/* Trending */}
         <View style={styles.section}>
