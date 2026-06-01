@@ -80,7 +80,7 @@ export default function LocationDetailScreen() {
   const claim = useBusinessClaim(id ?? '', location?.name, location?.address);
 
   const quickReports = useQuickReports(id ?? '');
-  const { destination, setHeadingThere, isHeadingThere } = useHeadingThere();
+  const { destination, setHeadingThere, clearDestination, isHeadingThere } = useHeadingThere();
 
   const [showReviewForm,  setShowReviewForm]  = useState(false);
   const [showToast,       setShowToast]       = useState(false);
@@ -132,6 +132,13 @@ export default function LocationDetailScreen() {
 
   async function handleHeadingThere() {
     if (!location) return;
+
+    // Already heading here — tap again to cancel
+    if (isHeadingThere(location.id)) {
+      await clearDestination();
+      return;
+    }
+
     const alreadySet = destination && destination.placeId !== location.id;
     if (alreadySet) {
       Alert.alert(
