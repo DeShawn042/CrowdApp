@@ -129,10 +129,10 @@ export default function LocationDetailScreen() {
   async function handleShare() {
     const crowdDesc = crowdDisplay.level
       ? `It's ${CROWD_LABELS[crowdDisplay.level]} at ${location!.name} right now!`
-      : `Check out ${location!.name} on CrowdApp!`;
+      : `Check out ${location!.name} on Prescout!`;
     await Share.share({
-      message: `${crowdDesc} Check CrowdApp to plan your visit 📱`,
-      title: `${location!.name} — CrowdApp`,
+      message: `${crowdDesc} Check Prescout to plan your visit 📱`,
+      title: `${location!.name} — Prescout`,
     });
   }
 
@@ -294,7 +294,7 @@ export default function LocationDetailScreen() {
           liveCrowd={crowdDisplay.source === 'live' ? crowdDisplay.level : undefined}
           googleLivePct={
             // Show Google's busyness estimate when the place is confirmed open
-            // and there are no CrowdApp reports overriding it.
+            // and there are no Prescout reports overriding it.
             location.openNow === true && crowdDisplay.source !== 'live'
               ? (location.busyHours[
                   currentHour >= 6 && currentHour <= 23
@@ -340,10 +340,10 @@ export default function LocationDetailScreen() {
           </Pressable>
         )}
 
-        {/* CrowdApp Reviews */}
+        {/* Prescout Reviews */}
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>CrowdApp Reviews</Text>
+            <Text style={styles.sectionTitle}>Prescout Reviews</Text>
             {averageRating !== null && (
               <View style={styles.avgRow}>
                 <StarRating rating={averageRating} size={14} />
@@ -364,7 +364,7 @@ export default function LocationDetailScreen() {
             <View style={styles.emptyCard}>
               <Text style={styles.emptyEmoji}>⭐</Text>
               <Text style={styles.emptyTitle}>No reviews yet</Text>
-              <Text style={styles.emptySub}>Be the first to leave a CrowdApp review!</Text>
+              <Text style={styles.emptySub}>Be the first to leave a Prescout review!</Text>
             </View>
           ) : (
             <View style={styles.listCard}>

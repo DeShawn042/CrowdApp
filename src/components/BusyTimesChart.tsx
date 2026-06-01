@@ -13,10 +13,10 @@ const LBL_H     = 16;
 const TOTAL_H_PAD = 72; // outer scroll (20×2) + card padding (16×2)
 
 // ── Data-source colours ───────────────────────────────────────
-const CROWDAPP_COLOR = '#22C55E'; // bright green  — CrowdApp live reports
+const PRESCOUT_COLOR = '#22C55E'; // bright green  — Prescout live reports
 const GOOGLE_COLOR   = '#3B82F6'; // blue          — Google live / typical-open
 
-// CrowdApp crowd level → bar height %
+// Prescout crowd level → bar height %
 const LIVE_PCT: Record<CrowdLevel, number> = {
   empty: 10, light: 35, moderate: 65, packed: 90,
 };
@@ -62,7 +62,7 @@ interface Props {
   /** Current real hour 0–23. */
   currentHour: number;
   /**
-   * CrowdApp live crowd level — set when Supabase crowd_reports has active
+   * Prescout live crowd level — set when Supabase crowd_reports has active
    * entries for this location within the last 60 minutes.
    * Priority 1 (overrides Google Live).
    */
@@ -70,7 +70,7 @@ interface Props {
   /**
    * Google's busyness estimate for the current hour (0–100).
    * Derived from busyHours when the place is confirmed open.
-   * Priority 2 (shown only when no CrowdApp reports).
+   * Priority 2 (shown only when no Prescout reports).
    */
   googleLivePct?: number;
   /** Venue open hour 0–23. Defaults to 6. */
@@ -119,15 +119,15 @@ export default function BusyTimesChart({
     : 1;
 
   // Determine which data source is active for the current hour
-  type DataSource = 'crowdapp' | 'google' | 'typical';
+  type DataSource = 'prescout' | 'google' | 'typical';
   const dataSource: DataSource =
-    liveCrowd                     ? 'crowdapp'
+    liveCrowd                     ? 'prescout'
     : googleLivePct != null       ? 'google'
     : 'typical';
 
   // NOW chip colour reflects the active data source
   const nowColor =
-    dataSource === 'crowdapp' ? CROWDAPP_COLOR
+    dataSource === 'prescout' ? PRESCOUT_COLOR
     : dataSource === 'google' ? GOOGLE_COLOR
     : COLORS.primary;
 
@@ -145,7 +145,7 @@ export default function BusyTimesChart({
     : `${fmtSubHour(start)} – ${fmtSubHour(end)}${end > 24 ? ' (next day)' : ''}`;
 
   const sourceLabel =
-    dataSource === 'crowdapp' ? 'CrowdApp Live'
+    dataSource === 'prescout' ? 'Prescout Live'
     : dataSource === 'google' ? 'Google Live'
     : 'Typical pattern';
 
@@ -177,7 +177,7 @@ export default function BusyTimesChart({
               : (val === 0 ? 0.08 : 0.28);
 
             // Heights for the two live-source overlays
-            const crowdappH = liveCrowd
+            const prescoutH = liveCrowd
               ? Math.max((LIVE_PCT[liveCrowd] / 100) * CHART_H, 4)
               : 0;
             const googleH = googleLivePct != null
@@ -225,17 +225,17 @@ export default function BusyTimesChart({
                     ]}
                   />
 
-                  {/* ② CrowdApp Live overlay (priority 1) */}
+                  {/* ② Prescout Live overlay (priority 1) */}
                   {isNow && liveCrowd && (
                     <View
                       style={[
                         styles.liveBar,
-                        { height: crowdappH, width: barW - 6, backgroundColor: CROWDAPP_COLOR },
+                        { height: prescoutH, width: barW - 6, backgroundColor: PRESCOUT_COLOR },
                       ]}
                     />
                   )}
 
-                  {/* ③ Google Live overlay (priority 2 — only when no CrowdApp data) */}
+                  {/* ③ Google Live overlay (priority 2 — only when no Prescout data) */}
                   {isNow && googleLivePct != null && !liveCrowd && (
                     <View
                       style={[
@@ -247,7 +247,7 @@ export default function BusyTimesChart({
 
                   {/* Dot above the active live bar */}
                   {isNow && liveCrowd && (
-                    <View style={[styles.liveDot, { bottom: crowdappH + 5, backgroundColor: CROWDAPP_COLOR }]} />
+                    <View style={[styles.liveDot, { bottom: prescoutH + 5, backgroundColor: PRESCOUT_COLOR }]} />
                   )}
                   {isNow && googleLivePct != null && !liveCrowd && (
                     <View style={[styles.liveDot, { bottom: googleH + 5, backgroundColor: GOOGLE_COLOR }]} />
@@ -291,7 +291,7 @@ export default function BusyTimesChart({
 
         <View style={styles.legendDivider} />
 
-        {/* Google Live — shown when place is open and no CrowdApp reports */}
+        {/* Google Live — shown when place is open and no Prescout reports */}
         {googleLivePct != null && !liveCrowd && (
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: GOOGLE_COLOR }]} />
@@ -301,12 +301,12 @@ export default function BusyTimesChart({
           </View>
         )}
 
-        {/* CrowdApp Live — shown when Supabase reports are active */}
+        {/* Prescout Live — shown when Supabase reports are active */}
         {liveCrowd && (
           <View style={styles.legendItem}>
-            <View style={[styles.legendDot, { backgroundColor: CROWDAPP_COLOR }]} />
-            <Text style={[styles.legendText, { color: CROWDAPP_COLOR, fontWeight: '600' }]}>
-              CrowdApp Live
+            <View style={[styles.legendDot, { backgroundColor: PRESCOUT_COLOR }]} />
+            <Text style={[styles.legendText, { color: PRESCOUT_COLOR, fontWeight: '600' }]}>
+              Prescout Live
             </Text>
           </View>
         )}

@@ -11,10 +11,10 @@ export const isSupabaseConfigured = url.length > 0 && key.length > 0;
 // GoTrueClient is created during hydration, producing the
 // "Multiple GoTrueClient instances" warning and risking session
 // de-sync between the two instances.
-const g = global as typeof globalThis & { _crowdAppSupabase?: SupabaseClient };
+const g = global as typeof globalThis & { _prescoutSupabase?: SupabaseClient };
 
-if (!g._crowdAppSupabase) {
-  g._crowdAppSupabase = createClient(
+if (!g._prescoutSupabase) {
+  g._prescoutSupabase = createClient(
     url || 'https://placeholder.supabase.co',
     key || 'placeholder-anon-key',
     {
@@ -27,7 +27,7 @@ if (!g._crowdAppSupabase) {
   );
 }
 
-export const supabase: SupabaseClient = g._crowdAppSupabase;
+export const supabase: SupabaseClient = g._prescoutSupabase;
 
 // ── Current user ─────────────────────────────────────────────
 // Updated by AuthContext on every auth state change so hooks can

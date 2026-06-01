@@ -52,7 +52,7 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
             <Text style={styles.logo}>📍</Text>
-            <Text style={styles.appName}>CrowdApp</Text>
+            <Text style={styles.appName}>Prescout</Text>
             <Text style={styles.tagline}>Know before you go.</Text>
           </View>
 

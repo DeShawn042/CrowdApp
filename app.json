@@ -1,18 +1,18 @@
 {
   "expo": {
-    "name": "CrowdApp",
-    "slug": "CrowdApp",
+    "name": "Prescout",
+    "slug": "prescout",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "crowdapp",
+    "scheme": "prescout",
     "userInterfaceStyle": "dark",
     "ios": {
       "icon": "./assets/expo.icon",
-      "bundleIdentifier": "com.crowdapp.app",
+      "bundleIdentifier": "com.prescout.app",
       "infoPlist": {
-        "NSLocationWhenInUseUsageDescription": "CrowdApp uses your location to find nearby venues and calculate distances.",
-        "NSLocationAlwaysAndWhenInUseUsageDescription": "CrowdApp monitors your location in the background to notify you when you arrive at a saved venue so you can report the crowd level.",
+        "NSLocationWhenInUseUsageDescription": "Prescout uses your location to find nearby venues and calculate distances.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Prescout monitors your location in the background to notify you when you arrive at a saved venue so you can report the crowd level.",
         "UIBackgroundModes": ["location", "fetch", "remote-notification"]
       }
     },
@@ -23,7 +23,7 @@
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
-      "package": "com.crowdapp.app",
+      "package": "com.prescout.app",
       "predictiveBackGestureEnabled": false,
       "permissions": [
         "android.permission.ACCESS_FINE_LOCATION",
@@ -42,8 +42,8 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "CrowdApp needs access to your photos to attach them to reviews.",
-          "cameraPermission": "CrowdApp needs access to your camera to take photos for reviews."
+          "photosPermission": "Prescout needs access to your photos to attach them to reviews.",
+          "cameraPermission": "Prescout needs access to your camera to take photos for reviews."
         }
       ],
       [
@@ -66,8 +66,8 @@
       [
         "expo-location",
         {
-          "locationAlwaysAndWhenInUsePermission": "CrowdApp uses your location in the background to notify you when you arrive at a saved venue.",
-          "locationWhenInUsePermission": "CrowdApp uses your location to find nearby venues and show distances."
+          "locationAlwaysAndWhenInUsePermission": "Prescout uses your location in the background to notify you when you arrive at a saved venue.",
+          "locationWhenInUsePermission": "Prescout uses your location to find nearby venues and show distances."
         }
       ]
     ],
