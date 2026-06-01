@@ -1,5 +1,5 @@
-import { router } from 'expo-router';
-import React, { useEffect, useMemo } from 'react';
+import { router, useFocusEffect } from 'expo-router';
+import React, { useCallback, useEffect, useMemo } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -32,7 +32,11 @@ export default function HomeScreen() {
   const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport } = useAppContext();
 
   const { trending, loading: trendingLoading } = useTrending(locations);
-  const { destination, clearDestination } = useHeadingThere();
+  const { destination, clearDestination, reload: reloadDestination } = useHeadingThere();
+
+  useFocusEffect(useCallback(() => {
+    reloadDestination();
+  }, [reloadDestination]));
   const isLive = trending.some(t => t.recentReports > 0);
 
   useGeofencing([...savedLocationIds, ...recentLocationIds.slice(0, 5)], locations);
