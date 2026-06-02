@@ -81,6 +81,7 @@ export interface AppUser {
   totalReports: number;
   weeklyReports: number;
   favoriteVenue: string;
+  isAdmin?: boolean;
 }
 
 export const MOCK_LOCATIONS: Location[] = [

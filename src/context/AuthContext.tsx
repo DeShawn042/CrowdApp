@@ -13,7 +13,7 @@ interface AuthContextValue {
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-function mapToAppUser(u: any): AppUser {
+function mapToAppUser(u: any, isAdmin = false): AppUser {
   const name =
     u.user_metadata?.name ??
     u.user_metadata?.full_name ??
@@ -27,7 +27,18 @@ function mapToAppUser(u: any): AppUser {
     totalReports:  0,
     weeklyReports: 0,
     favoriteVenue: '',
+    isAdmin,
   };
+}
+
+async function fetchIsAdmin(userId: string): Promise<boolean> {
+  if (!isSupabaseConfigured) return false;
+  const { data } = await supabase
+    .from('profiles')
+    .select('is_admin')
+    .eq('id', userId)
+    .maybeSingle();
+  return data?.is_admin === true;
 }
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
@@ -41,9 +52,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
 
     // Restore an existing session on mount (handles page refresh)
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session?.user) {
-        const appUser = mapToAppUser(session.user);
+        const isAdmin = await fetchIsAdmin(session.user.id);
+        const appUser = mapToAppUser(session.user, isAdmin);
         setUser(appUser);
         setCurrentUser(session.user.id, appUser.name);
       }
@@ -51,9 +63,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     });
 
     // Keep state in sync with every auth event (sign-in, sign-out, token refresh)
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
       if (session?.user) {
-        const appUser = mapToAppUser(session.user);
+        const isAdmin = await fetchIsAdmin(session.user.id);
+        const appUser = mapToAppUser(session.user, isAdmin);
         setUser(appUser);
         setCurrentUser(session.user.id, appUser.name);
       } else {

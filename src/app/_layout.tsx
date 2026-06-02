@@ -24,6 +24,10 @@ function ThemedStack() {
           name="submit/[id]"
           options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_bottom' }}
         />
+        <Stack.Screen
+          name="admin/index"
+          options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_bottom' }}
+        />
       </Stack>
     </>
   );

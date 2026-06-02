@@ -155,6 +155,14 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+        {/* Version — long press to open admin if is_admin */}
+        <Pressable
+          onLongPress={() => { if (user?.isAdmin) router.push('/admin'); }}
+          delayLongPress={800}
+          style={{ alignItems: 'center', paddingVertical: 8 }}>
+          <Text style={{ color: colors.textMuted, fontSize: 12 }}>Prescout v1.0.0</Text>
+        </Pressable>
+
       </ScrollView>
     </SafeAreaView>
   );
