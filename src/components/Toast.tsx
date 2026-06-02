@@ -1,6 +1,7 @@
 import React, { useEffect, useRef } from 'react';
 import { Animated, StyleSheet, Text } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
   message: string;
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function Toast({ message, visible, onHide, duration = 2500 }: Props) {
+  const { colors } = useTheme();
   const opacity = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -24,8 +26,8 @@ export default function Toast({ message, visible, onHide, duration = 2500 }: Pro
   if (!visible) return null;
 
   return (
-    <Animated.View style={[styles.toast, { opacity }]}>
-      <Text style={styles.text}>{message}</Text>
+    <Animated.View style={[styles.toast, { opacity, backgroundColor: colors.card, borderColor: COLORS.primary + '60' }]}>
+      <Text style={[styles.text, { color: colors.text }]}>{message}</Text>
     </Animated.View>
   );
 }

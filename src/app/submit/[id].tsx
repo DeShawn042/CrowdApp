@@ -19,6 +19,8 @@ import { CrowdLevel } from '@/data/mockData';
 import { formatCooldown, useReportLimit } from '@/hooks/useReportLimit';
 import { checkToxicity } from '@/utils/perspectiveApi';
 import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_EMOJIS, CROWD_LABELS } from '@/utils/crowdUtils';
+import { useTheme } from '@/context/ThemeContext';
+import type { AppColors } from '@/constants/themes';
 
 const CROWD_OPTIONS: { level: CrowdLevel; description: string }[] = [
   { level: 'empty',    description: 'Basically no one here' },
@@ -32,6 +34,8 @@ export default function SubmitReportScreen() {
   const { getLocationById, submitReport } = useAppContext();
   const location = getLocationById(id ?? '');
 
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { canReport, cooldownSeconds, lastReportLevel, loading: limitLoading } =
     useReportLimit(id ?? '');
 
@@ -195,40 +199,40 @@ export default function SubmitReportScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe:               { flex: 1, backgroundColor: COLORS.bg },
+function makeStyles(c: AppColors) { return StyleSheet.create({
+  safe:               { flex: 1, backgroundColor: c.bg },
   flex:               { flex: 1 },
-  handle:             { width: 40, height: 4, backgroundColor: COLORS.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
+  handle:             { width: 40, height: 4, backgroundColor: c.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
   header:             { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
   cancelText:         { color: COLORS.primary, fontSize: 16, fontWeight: '600' },
-  headerTitle:        { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+  headerTitle:        { color: c.text, fontSize: 16, fontWeight: '700' },
   scroll:             { flex: 1 },
   content:            { padding: 20, gap: 24, paddingBottom: 80 },
   locationRow:        { gap: 4 },
-  atText:             { color: COLORS.textMuted, fontSize: 12 },
-  locationName:       { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  atText:             { color: c.textMuted, fontSize: 12 },
+  locationName:       { color: c.text, fontSize: 16, fontWeight: '600' },
   cooldownBanner:     { backgroundColor: COLORS.moderate + '18', borderRadius: 14, padding: 16, gap: 4, borderWidth: 1, borderColor: COLORS.moderate + '50' },
   cooldownTitle:      { color: COLORS.moderate, fontSize: 14, fontWeight: '700' },
-  cooldownSub:        { color: COLORS.textSec, fontSize: 14 },
-  question:           { color: COLORS.textSec, fontSize: 16, fontWeight: '600' },
+  cooldownSub:        { color: c.textSec, fontSize: 14 },
+  question:           { color: c.textSec, fontSize: 16, fontWeight: '600' },
   optionList:         { gap: 10 },
-  option:             { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: COLORS.border },
+  option:             { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 14, borderWidth: 1, borderColor: c.border },
   optionPressed:      { opacity: 0.75, transform: [{ scale: 0.98 }] },
-  optionIcon:         { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: COLORS.surface },
+  optionIcon:         { width: 48, height: 48, borderRadius: 14, alignItems: 'center', justifyContent: 'center', backgroundColor: c.surface },
   optionText:         { flex: 1, gap: 3 },
-  optionLevel:        { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  optionDesc:         { color: COLORS.textMuted, fontSize: 12 },
-  radio:              { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: COLORS.border, alignItems: 'center', justifyContent: 'center' },
+  optionLevel:        { color: c.text, fontSize: 16, fontWeight: '600' },
+  optionDesc:         { color: c.textMuted, fontSize: 12 },
+  radio:              { width: 22, height: 22, borderRadius: 11, borderWidth: 2, borderColor: c.border, alignItems: 'center', justifyContent: 'center' },
   radioDot:           { width: 10, height: 10, borderRadius: 5 },
   commentSection:     { gap: 8 },
-  commentLabel:       { color: COLORS.textSec, fontSize: 14, fontWeight: '600' },
-  commentInput:       { backgroundColor: COLORS.card, borderWidth: 1, borderColor: COLORS.border, borderRadius: 12, padding: 14, color: COLORS.text, fontSize: 14, minHeight: 88, textAlignVertical: 'top' },
+  commentLabel:       { color: c.textSec, fontSize: 14, fontWeight: '600' },
+  commentInput:       { backgroundColor: c.card, borderWidth: 1, borderColor: c.border, borderRadius: 12, padding: 14, color: c.text, fontSize: 14, minHeight: 88, textAlignVertical: 'top' },
   commentInputFocused: { borderColor: COLORS.primary },
-  charCount:          { color: COLORS.textMuted, fontSize: 12, textAlign: 'right' },
+  charCount:          { color: c.textMuted, fontSize: 12, textAlign: 'right' },
   errorBanner:        { backgroundColor: COLORS.packed + '20', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: COLORS.packed },
   errorText:          { color: COLORS.packed, fontSize: 14 },
-  submitBtn:          { backgroundColor: COLORS.textMuted, borderRadius: 16, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 },
+  submitBtn:          { backgroundColor: c.textMuted, borderRadius: 16, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 },
   submitBtnDisabled:  { opacity: 0.5 },
   submitBtnPressed:   { opacity: 0.75, transform: [{ scale: 0.98 }] },
-  submitBtnText:      { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-});
+  submitBtnText:      { color: c.text, fontSize: 16, fontWeight: '600' },
+}); }

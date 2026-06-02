@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import { TrendingLocation } from '@/hooks/useTrending';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
@@ -14,12 +15,13 @@ interface Props {
 }
 
 export default function TrendingCard({ location, rank, onPress, showRank = true }: Props) {
+  const { colors } = useTheme();
   const crowdColor = CROWD_COLORS[location.currentCrowd];
   const photoUrl   = usePlacesPhoto(location);
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
       onPress={onPress}>
       {showRank && (
         <View style={styles.rankBadge}>
@@ -35,14 +37,14 @@ export default function TrendingCard({ location, rank, onPress, showRank = true 
         name={location.name}
       />
 
-      <Text style={styles.name} numberOfLines={2}>{location.name}</Text>
+      <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>{location.name}</Text>
 
       <View style={[styles.crowdPill, { backgroundColor: crowdColor + '20', borderColor: crowdColor + '60' }]}>
         <View style={[styles.dot, { backgroundColor: crowdColor }]} />
         <Text style={[styles.crowdText, { color: crowdColor }]}>{CROWD_LABELS[location.currentCrowd]}</Text>
       </View>
 
-      <Text style={styles.reports}>
+      <Text style={[styles.reports, { color: colors.textMuted }]}>
         {location.recentReports > 0 ? `${location.recentReports} reports` : `⭐ ${location.rating}`}
       </Text>
     </Pressable>

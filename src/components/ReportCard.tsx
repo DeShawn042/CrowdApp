@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Report } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import { timeAgo } from '@/utils/crowdUtils';
 import CrowdLevelBadge from './CrowdLevelBadge';
 
@@ -10,6 +11,7 @@ interface Props {
 }
 
 export default function ReportCard({ report }: Props) {
+  const { colors } = useTheme();
   const initials = report.userName
     .split(' ')
     .map(w => w[0])
@@ -18,14 +20,14 @@ export default function ReportCard({ report }: Props) {
     .slice(0, 2);
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { borderBottomColor: colors.border }]}>
       <View style={styles.avatar}>
         <Text style={styles.initials}>{initials}</Text>
       </View>
       <View style={styles.content}>
         <View style={styles.header}>
-          <Text style={styles.name}>{report.userName}</Text>
-          <Text style={styles.time}>{timeAgo(report.timestamp)}</Text>
+          <Text style={[styles.name, { color: colors.text }]}>{report.userName}</Text>
+          <Text style={[styles.time, { color: colors.textMuted }]}>{timeAgo(report.timestamp)}</Text>
         </View>
         <CrowdLevelBadge level={report.crowdLevel} size="sm" />
         {report.comment && (

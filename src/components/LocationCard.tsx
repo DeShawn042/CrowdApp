@@ -2,6 +2,7 @@ import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Location } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import { useAppContext } from '@/context/AppContext';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { useReviews } from '@/hooks/useReviews';
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function LocationCard({ location, onPress, showDistance = true }: Props) {
+  const { colors } = useTheme();
   const { savedLocationIds, toggleSaved, getReportsForLocation } = useAppContext();
   const isFavorite = savedLocationIds.includes(location.id);
   const photoUrl = usePlacesPhoto(location);
@@ -26,18 +28,18 @@ export default function LocationCard({ location, onPress, showDistance = true }:
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.card, { backgroundColor: colors.card, borderColor: colors.border }, pressed && styles.pressed]}
       onPress={onPress}>
       <LocationPhoto type={location.type} photoUrl={photoUrl} size={48} borderRadius={14} name={location.name} />
       <View style={styles.info}>
         <View style={styles.nameRow}>
-          <Text style={styles.name} numberOfLines={1}>{location.name}</Text>
+          <Text style={[styles.name, { color: colors.text }]} numberOfLines={1}>{location.name}</Text>
         </View>
-        <Text style={styles.address} numberOfLines={1}>{location.address}</Text>
+        <Text style={[styles.address, { color: colors.textSec }]} numberOfLines={1}>{location.address}</Text>
         <View style={styles.meta}>
           <CrowdLevelBadge level={crowdDisplay.level} size="sm" source={crowdDisplay.source} />
           {location.reportCount > 0 && (
-            <Text style={styles.reportCount}>
+            <Text style={[styles.reportCount, { color: colors.textMuted }]}>
               {location.reportCount} {location.reportCount === 1 ? 'report' : 'reports'}
             </Text>
           )}
@@ -60,8 +62,8 @@ export default function LocationCard({ location, onPress, showDistance = true }:
         <Pressable onPress={() => toggleSaved(location.id)} hitSlop={10} style={styles.heartBtn}>
           <Text style={styles.heartIcon}>{isFavorite ? '❤️' : '🤍'}</Text>
         </Pressable>
-        {showDistance && <Text style={styles.distance}>{location.distance}</Text>}
-        <Text style={styles.chevron}>›</Text>
+        {showDistance && <Text style={[styles.distance, { color: colors.textSec }]}>{location.distance}</Text>}
+        <Text style={[styles.chevron, { color: colors.textMuted }]}>›</Text>
       </View>
     </Pressable>
   );

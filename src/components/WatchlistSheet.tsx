@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { ActivityIndicator, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import type { AlertLevel } from '@/hooks/useWatchlist';
 
 const LEVELS: { level: AlertLevel; emoji: string; label: string; desc: string }[] = [
@@ -22,6 +23,7 @@ interface Props {
 export default function WatchlistSheet({
   visible, placeName, currentWatchLevel, onClose, onSelect, onRemove,
 }: Props) {
+  const { colors } = useTheme();
   const [submitting, setSubmitting] = useState(false);
   const [confirmed,  setConfirmed]  = useState<AlertLevel | null>(null);
 
@@ -53,7 +55,7 @@ export default function WatchlistSheet({
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={handleClose} statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={handleClose}>
-        <Pressable style={styles.sheet}>
+        <Pressable style={[styles.sheet, { backgroundColor: colors.card }]}>
           <View style={styles.handle} />
 
           <View style={styles.titleRow}>

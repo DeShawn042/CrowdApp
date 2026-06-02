@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import type { MapOption } from '@/hooks/useMapLink';
 
 const APP_ICONS: Record<string, string> = {
@@ -25,6 +26,7 @@ interface Props {
 }
 
 export default function MapChooserModal({ visible, options, onClose }: Props) {
+  const { colors } = useTheme();
   function handlePick(url: string) {
     onClose();
     Linking.openURL(url);
@@ -38,9 +40,9 @@ export default function MapChooserModal({ visible, options, onClose }: Props) {
       onRequestClose={onClose}
       statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={onClose}>
-        <Pressable style={styles.sheet}>
-          <View style={styles.handle} />
-          <Text style={styles.title}>Open in Maps</Text>
+        <Pressable style={[styles.sheet, { backgroundColor: colors.card }]}>
+          <View style={[styles.handle, { backgroundColor: colors.border }]} />
+          <Text style={[styles.title, { color: colors.textMuted }]}>Open in Maps</Text>
 
           {options.map(opt => (
             <Pressable

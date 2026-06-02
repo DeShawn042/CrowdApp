@@ -8,6 +8,7 @@ import {
   View,
 } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import type { QuickReportConfig } from '@/utils/quickReportConfig';
 
 interface Props {
@@ -25,6 +26,7 @@ export default function QuickReportSheet({
   onClose,
   onSubmit,
 }: Props) {
+  const { colors } = useTheme();
   const [submitting, setSubmitting] = useState(false);
   const [submitted,  setSubmitted]  = useState(false);
 
@@ -51,7 +53,7 @@ export default function QuickReportSheet({
       onRequestClose={handleClose}
       statusBarTranslucent>
       <Pressable style={styles.backdrop} onPress={handleClose}>
-        <Pressable style={styles.sheet}>
+        <Pressable style={[styles.sheet, { backgroundColor: colors.card }]}>
           <View style={styles.handle} />
 
           <View style={styles.titleRow}>

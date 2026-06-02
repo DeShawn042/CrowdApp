@@ -7,6 +7,8 @@ import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
+import { useTheme } from '@/context/ThemeContext';
+import type { AppColors } from '@/constants/themes';
 import type { CrowdLevel } from '@/data/mockData';
 
 interface DashboardStats {
@@ -25,6 +27,8 @@ export default function OwnerDashboard() {
   const { getLocationById } = useAppContext();
   const location = getLocationById(id ?? '');
 
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const [stats, setStats]   = useState<DashboardStats | null>(null);
   const [loading, setLoading] = useState(true);
 
@@ -206,37 +210,37 @@ export default function OwnerDashboard() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe:           { flex: 1, backgroundColor: COLORS.bg },
+function makeStyles(c: AppColors) { return StyleSheet.create({
+  safe:           { flex: 1, backgroundColor: c.bg },
   header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
   backBtn:        { paddingVertical: 4, paddingHorizontal: 20 },
   backText:       { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  headerTitle:    { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+  headerTitle:    { color: c.text, fontSize: 16, fontWeight: '700' },
   content:        { padding: 20, gap: 16, paddingBottom: 80 },
   loadingBox:     { alignItems: 'center', paddingVertical: 40, gap: 14 },
-  loadingText:    { color: COLORS.textMuted, fontSize: 14 },
+  loadingText:    { color: c.textMuted, fontSize: 14 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
   locHeader:      { gap: 6 },
-  locName:        { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  locName:        { color: c.text, fontSize: 16, fontWeight: '600' },
   verifiedBadge:  { alignSelf: 'flex-start', backgroundColor: COLORS.primary + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, borderWidth: 1, borderColor: COLORS.primary + '50' },
   verifiedTxt:    { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
-  card:           { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: COLORS.border },
-  cardTitle:      { color: COLORS.text, fontSize: 18, fontWeight: '700' },
+  card:           { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: c.border },
+  cardTitle:      { color: c.text, fontSize: 18, fontWeight: '700' },
   statsRow:       { flexDirection: 'row', justifyContent: 'space-around' },
   stat:           { alignItems: 'center', gap: 4 },
   statNum:        { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
-  statLabel:      { color: COLORS.textMuted, fontSize: 12, textAlign: 'center' },
-  statDivider:    { width: 1, backgroundColor: COLORS.border },
-  muted:          { color: COLORS.textMuted, fontSize: 14 },
+  statLabel:      { color: c.textMuted, fontSize: 12, textAlign: 'center' },
+  statDivider:    { width: 1, backgroundColor: c.border },
+  muted:          { color: c.textMuted, fontSize: 14 },
   breakdown:      { gap: 10 },
   breakdownRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   breakdownLabel: { width: 68, fontSize: 12, fontWeight: '600' },
-  barTrack:       { flex: 1, height: 8, backgroundColor: COLORS.surface, borderRadius: 4, overflow: 'hidden' },
+  barTrack:       { flex: 1, height: 8, backgroundColor: c.surface, borderRadius: 4, overflow: 'hidden' },
   barFill:        { height: '100%', borderRadius: 4, minWidth: 4 },
-  breakdownCount: { color: COLORS.textMuted, fontSize: 12, width: 24, textAlign: 'right' },
+  breakdownCount: { color: c.textMuted, fontSize: 12, width: 24, textAlign: 'right' },
   reviewRow:      { gap: 4 },
-  reviewBorder:   { paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
+  reviewBorder:   { paddingTop: 12, borderTopWidth: 1, borderTopColor: c.border },
   reviewTop:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reviewName:     { color: COLORS.text, fontSize: 14, fontWeight: '600', flex: 1 },
-  reviewContent:  { color: COLORS.textSec, fontSize: 14, lineHeight: 20 },
-});
+  reviewName:     { color: c.text, fontSize: 14, fontWeight: '600', flex: 1 },
+  reviewContent:  { color: c.textSec, fontSize: 14, lineHeight: 20 },
+}); }

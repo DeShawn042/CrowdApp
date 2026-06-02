@@ -3,6 +3,7 @@ import React from 'react';
 import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 
 const TABS = [
   { label: 'Home',    emoji: '🏠', route: '/(tabs)/' as const },
@@ -11,12 +12,13 @@ const TABS = [
 ];
 
 export default function BottomNav() {
+  const { colors } = useTheme();
   const insets = useSafeAreaInsets();
 
   return (
     <View style={[
       styles.bar,
-      { paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 16) : 10 },
+      { backgroundColor: colors.tabBg, borderTopColor: colors.border, paddingBottom: Platform.OS === 'ios' ? Math.max(insets.bottom, 16) : 10 },
     ]}>
       {TABS.map(tab => (
         <Pressable
@@ -24,7 +26,7 @@ export default function BottomNav() {
           style={({ pressed }) => [styles.tab, pressed && { opacity: 0.7 }]}
           onPress={() => router.push(tab.route)}>
           <Text style={styles.emoji}>{tab.emoji}</Text>
-          <Text style={styles.label}>{tab.label}</Text>
+          <Text style={[styles.label, { color: colors.tabInactive }]}>{tab.label}</Text>
         </Pressable>
       ))}
     </View>

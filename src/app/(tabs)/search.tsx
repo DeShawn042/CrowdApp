@@ -12,6 +12,8 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import LocationCard from '@/components/LocationCard';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
+import type { AppColors } from '@/constants/themes';
 import { useAppContext } from '@/context/AppContext';
 import { Location } from '@/data/mockData';
 import { searchNearby, searchText } from '@/utils/googlePlaces';
@@ -44,6 +46,8 @@ const CROWD_FILTERS = (['all', 'empty', 'light', 'moderate', 'packed'] as const)
 
 export default function SearchScreen() {
   const params = useLocalSearchParams<{ q?: string }>();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { locations, userLocation, addRecentLocation, registerLocation } = useAppContext();
 
   const [query,             setQuery]             = useState(params.q ?? '');
@@ -255,76 +259,41 @@ export default function SearchScreen() {
 
 const TILE_GAP = 12;
 
-const styles = StyleSheet.create({
-  safe:       { flex: 1, backgroundColor: COLORS.bg },
-  searchRow:  { paddingHorizontal: 20, paddingVertical: 12 },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: COLORS.card,
-    borderRadius: 14,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    gap: 10,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  searchBarFocused: { borderColor: COLORS.primary },
-  searchIcon:  { fontSize: 16 },
-  searchInput: { flex: 1, color: COLORS.text, fontSize: 15 },
-  spinner:     { marginLeft: 4 },
-  scroll:      { flex: 1 },
-
-  /* ── Browse / category grid ── */
-  browseSection: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 80 },
-  browseTitle:   { color: COLORS.text, fontSize: 18, fontWeight: '700', marginBottom: 16 },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: TILE_GAP,
-  },
-  tile: {
-    width: `${(100 - TILE_GAP / 2) / 2}%` as any,
-    borderRadius: 16,
-    borderWidth: 1,
-    paddingVertical: 18,
-    paddingHorizontal: 14,
-    gap: 8,
-    alignItems: 'flex-start',
-  },
-  tilePressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
-  tileEmoji:   { fontSize: 28 },
-  tileLabel:   { fontSize: 12, fontWeight: '600', lineHeight: 18 },
-
-  /* ── Active category chip ── */
-  catChipRow:   { paddingHorizontal: 20, paddingBottom: 8 },
-  catChip:      { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
-  catChipEmoji: { fontSize: 15 },
-  catChipLabel: { fontSize: 14, fontWeight: '600' },
-  catChipClear: { fontSize: 13, fontWeight: '700', marginLeft: 2 },
-
-  /* ── Crowd filter ── */
-  filterRow: { paddingHorizontal: 20, paddingBottom: 10, gap: 8 },
-  crowdChip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    backgroundColor: COLORS.card,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  crowdChipActive:    { borderWidth: 1 },
-  crowdChipText:      { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
-  crowdChipTextActive:{ color: COLORS.text },
-
-  /* ── Results ── */
-  results:      { padding: 20, paddingTop: 4, gap: 12, paddingBottom: 80 },
-  loadingBox:   { alignItems: 'center', paddingVertical: 40, gap: 14 },
-  loadingText:  { color: COLORS.textMuted, fontSize: 14 },
-  resultCount:  { color: COLORS.textMuted, fontSize: 12 },
-  list:         { gap: 10 },
-  empty:        { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emptyEmoji:   { fontSize: 40 },
-  emptyTitle:   { color: COLORS.textSec, fontSize: 16, fontWeight: '600' },
-  emptySubtitle:{ color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
-});
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    safe:             { flex: 1, backgroundColor: c.bg },
+    searchRow:        { paddingHorizontal: 20, paddingVertical: 12 },
+    searchBar:        { flexDirection: 'row', alignItems: 'center', backgroundColor: c.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, gap: 10, borderWidth: 1, borderColor: c.border },
+    searchBarFocused: { borderColor: COLORS.primary },
+    searchIcon:       { fontSize: 16 },
+    searchInput:      { flex: 1, color: c.text, fontSize: 15 },
+    spinner:          { marginLeft: 4 },
+    scroll:           { flex: 1 },
+    browseSection:    { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 80 },
+    browseTitle:      { color: c.text, fontSize: 18, fontWeight: '700', marginBottom: 16 },
+    grid:             { flexDirection: 'row', flexWrap: 'wrap', gap: TILE_GAP },
+    tile:             { width: `${(100 - TILE_GAP / 2) / 2}%` as any, borderRadius: 16, borderWidth: 1, paddingVertical: 18, paddingHorizontal: 14, gap: 8, alignItems: 'flex-start' },
+    tilePressed:      { opacity: 0.7, transform: [{ scale: 0.97 }] },
+    tileEmoji:        { fontSize: 28 },
+    tileLabel:        { fontSize: 12, fontWeight: '600', lineHeight: 18 },
+    catChipRow:       { paddingHorizontal: 20, paddingBottom: 8 },
+    catChip:          { flexDirection: 'row', alignItems: 'center', alignSelf: 'flex-start', gap: 6, borderWidth: 1.5, borderRadius: 20, paddingHorizontal: 14, paddingVertical: 7 },
+    catChipEmoji:     { fontSize: 15 },
+    catChipLabel:     { fontSize: 14, fontWeight: '600' },
+    catChipClear:     { fontSize: 13, fontWeight: '700', marginLeft: 2 },
+    filterRow:        { paddingHorizontal: 20, paddingBottom: 10, gap: 8 },
+    crowdChip:        { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, backgroundColor: c.card, borderWidth: 1, borderColor: c.border },
+    crowdChipActive:  { borderWidth: 1 },
+    crowdChipText:    { color: c.textSec, fontSize: 12, fontWeight: '500' },
+    crowdChipTextActive: { color: c.text },
+    results:          { padding: 20, paddingTop: 4, gap: 12, paddingBottom: 80 },
+    loadingBox:       { alignItems: 'center', paddingVertical: 40, gap: 14 },
+    loadingText:      { color: c.textMuted, fontSize: 14 },
+    resultCount:      { color: c.textMuted, fontSize: 12 },
+    list:             { gap: 10 },
+    empty:            { alignItems: 'center', paddingVertical: 40, gap: 8 },
+    emptyEmoji:       { fontSize: 40 },
+    emptyTitle:       { color: c.textSec, fontSize: 16, fontWeight: '600' },
+    emptySubtitle:    { color: c.textMuted, fontSize: 14, textAlign: 'center' },
+  });
+}

@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 
 export default function SignupScreen() {
   const { signup } = useAuth();
+  const { colors } = useTheme();
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -55,7 +57,7 @@ export default function SignupScreen() {
   ];
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -68,17 +70,17 @@ export default function SignupScreen() {
           </Pressable>
 
           <View style={styles.header}>
-            <Text style={styles.heading}>Create account</Text>
-            <Text style={styles.sub}>Start sharing crowd levels with your community.</Text>
+            <Text style={[styles.heading, { color: colors.text }]}>Create account</Text>
+            <Text style={[styles.sub, { color: colors.textSec }]}>Start sharing crowd levels with your community.</Text>
           </View>
 
           <View style={styles.form}>
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={[styles.error, { color: COLORS.packed, backgroundColor: COLORS.packed + '1A' }]}>{error}</Text> : null}
 
             <View style={styles.field}>
-              <Text style={styles.label}>Full Name</Text>
+              <Text style={[styles.label, { color: colors.textSec }]}>Full Name</Text>
               <TextInput
-                style={inputStyle('name')}
+                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'name' && styles.inputFocused]}
                 value={name}
                 onChangeText={setName}
                 placeholder="Jane Smith"
@@ -90,9 +92,9 @@ export default function SignupScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={[styles.label, { color: colors.textSec }]}>Email</Text>
               <TextInput
-                style={inputStyle('email')}
+                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'email' && styles.inputFocused]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
@@ -105,9 +107,9 @@ export default function SignupScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={[styles.label, { color: colors.textSec }]}>Password</Text>
               <TextInput
-                style={inputStyle('pass')}
+                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'pass' && styles.inputFocused]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="Min. 6 characters"
@@ -130,7 +132,7 @@ export default function SignupScreen() {
             </Pressable>
 
             <View style={styles.loginRow}>
-              <Text style={styles.loginText}>Already have an account?</Text>
+              <Text style={[styles.loginText, { color: colors.textSec }]}>Already have an account?</Text>
               <Pressable onPress={() => router.replace('/(auth)/login')}>
                 <Text style={styles.loginLink}> Log in</Text>
               </Pressable>

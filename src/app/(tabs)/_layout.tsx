@@ -3,6 +3,7 @@ import React from 'react';
 import { ActivityIndicator, Platform, Text, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
 import { useAuth } from '@/context/AuthContext';
+import { useTheme } from '@/context/ThemeContext';
 
 function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
   return (
@@ -12,10 +13,11 @@ function TabIcon({ emoji, focused }: { emoji: string; focused: boolean }) {
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuth();
+  const { colors } = useTheme();
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, backgroundColor: '#0F0F13', alignItems: 'center', justifyContent: 'center' }}>
+      <View style={{ flex: 1, backgroundColor: colors.bg, alignItems: 'center', justifyContent: 'center' }}>
         <ActivityIndicator color={COLORS.primary} />
       </View>
     );
@@ -30,15 +32,15 @@ export default function TabsLayout() {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: COLORS.tabBg,
-          borderTopColor: COLORS.border,
+          backgroundColor: colors.tabBg,
+          borderTopColor: colors.border,
           borderTopWidth: 1,
           height: Platform.OS === 'ios' ? 85 : 65,
           paddingBottom: Platform.OS === 'ios' ? 28 : 10,
           paddingTop: 8,
         },
         tabBarActiveTintColor: COLORS.tabActive,
-        tabBarInactiveTintColor: COLORS.tabInactive,
+        tabBarInactiveTintColor: colors.tabInactive,
         tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
       }}>
       <Tabs.Screen

@@ -5,10 +5,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import GoogleReviewCard from '@/components/GoogleReviewCard';
 import StarRating from '@/components/StarRating';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
+import type { AppColors } from '@/constants/themes';
 import { useAppContext } from '@/context/AppContext';
 
 export default function GoogleReviewsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const { getLocationById } = useAppContext();
   const location = getLocationById(id ?? '');
 
@@ -81,27 +85,27 @@ export default function GoogleReviewsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe:           { flex: 1, backgroundColor: COLORS.bg },
+function makeStyles(c: AppColors) { return StyleSheet.create({
+  safe:           { flex: 1, backgroundColor: c.bg },
   header:         { paddingHorizontal: 20, paddingVertical: 12 },
   backBtn:        { paddingVertical: 4, alignSelf: 'flex-start' },
   backText:       { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
   scroll:         { flex: 1 },
   content:        { padding: 20, paddingTop: 4, gap: 20, paddingBottom: 80 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorText:      { color: COLORS.textMuted, fontSize: 14 },
-  locationName:   { color: COLORS.text, fontSize: 24, fontWeight: '700', lineHeight: 30 },
-  summaryCard:    { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: COLORS.border },
+  errorText:      { color: c.textMuted, fontSize: 14 },
+  locationName:   { color: c.text, fontSize: 24, fontWeight: '700', lineHeight: 30 },
+  summaryCard:    { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: c.border },
   googleBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: COLORS.google, alignItems: 'center', justifyContent: 'center' },
-  googleBadgeText:{ color: COLORS.text, fontSize: 12, fontWeight: '800' },
-  summaryLabel:   { color: COLORS.textSec, fontSize: 14, fontWeight: '600' },
+  googleBadgeText:{ color: '#fff', fontSize: 12, fontWeight: '800' },
+  summaryLabel:   { color: c.textSec, fontSize: 14, fontWeight: '600' },
   ratingRow:      { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  ratingNumber:   { color: COLORS.text, fontSize: 42, fontWeight: '700', lineHeight: 48 },
+  ratingNumber:   { color: c.text, fontSize: 42, fontWeight: '700', lineHeight: 48 },
   ratingRight:    { gap: 6 },
-  reviewCount:    { color: COLORS.textMuted, fontSize: 12 },
-  listCard:       { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border },
+  reviewCount:    { color: c.textMuted, fontSize: 12 },
+  listCard:       { backgroundColor: c.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: c.border },
   empty:          { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyEmoji:     { fontSize: 40 },
-  emptyText:      { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
-});
+  emptyText:      { color: c.textMuted, fontSize: 14, textAlign: 'center' },
+}); }

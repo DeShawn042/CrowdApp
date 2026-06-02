@@ -2,6 +2,7 @@ import React from 'react';
 import { Image, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { Review } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import { formatDate } from '@/utils/crowdUtils';
 import StarRating from './StarRating';
 
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function ReviewCard({ review, isOwn = false }: Props) {
+  const { colors } = useTheme();
   const initials = review.userName
     .split(' ')
     .map(n => n[0])
@@ -19,20 +21,20 @@ export default function ReviewCard({ review, isOwn = false }: Props) {
     .toUpperCase();
 
   return (
-    <View style={styles.card}>
+    <View style={[styles.card, { borderBottomColor: colors.border }]}>
       <View style={styles.header}>
         <View style={[styles.avatar, isOwn && styles.avatarOwn]}>
           <Text style={[styles.avatarText, isOwn && styles.avatarTextOwn]}>{initials}</Text>
         </View>
         <View style={styles.headerInfo}>
-          <Text style={styles.name}>
+          <Text style={[styles.name, { color: colors.text }]}>
             {review.userName}{isOwn ? ' (you)' : ''}
           </Text>
           <StarRating rating={review.rating} size={13} />
         </View>
         <Text style={styles.date}>{formatDate(review.updatedAt || review.createdAt)}</Text>
       </View>
-      <Text style={styles.content}>{review.content}</Text>
+      <Text style={[styles.content, { color: colors.textSec }]}>{review.content}</Text>
       {review.ownerResponse && (
         <View style={styles.ownerResponse}>
           <View style={styles.ownerBadge}>

@@ -5,12 +5,16 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import WatchlistCard from '@/components/WatchlistCard';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
+import type { AppColors } from '@/constants/themes';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { formatDate, timeAgo } from '@/utils/crowdUtils';
 
 export default function ProfileScreen() {
+  const { colors, preference, setPreference } = useTheme();
+  const styles = makeStyles(colors);
   const { user, logout } = useAuth();
   const { myReports, getLocationById } = useAppContext();
   const { items: watchlistItems, removeFromWatchlist, renewWatchlistItem, reload: reloadWatchlist } = useWatchlist();
@@ -81,6 +85,23 @@ export default function ProfileScreen() {
           </View>
         </View>
 
+        {/* Theme */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Appearance</Text>
+          <View style={styles.themeRow}>
+            {THEME_OPTIONS.map(o => (
+              <Pressable
+                key={o.key}
+                style={({ pressed }) => [styles.themeBtn, preference === o.key && styles.themeBtnActive, pressed && { opacity: 0.75 }]}
+                onPress={() => setPreference(o.key)}>
+                <Text style={styles.themeIcon}>{o.icon}</Text>
+                <Text style={[styles.themeLabel, preference === o.key && styles.themeLabelActive]}>{o.label}</Text>
+                {preference === o.key && <Text style={styles.themeCheck}>✓</Text>}
+              </Pressable>
+            ))}
+          </View>
+        </View>
+
         {/* Watchlist */}
         {watchlistItems.length > 0 && (
           <View style={styles.section}>
@@ -139,40 +160,58 @@ export default function ProfileScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  scroll: { flex: 1 },
-  content: { padding: 20, gap: 20, paddingBottom: 80 },
-  header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { color: COLORS.text, fontSize: 24, fontWeight: '700' },
-  logoutBtn: { backgroundColor: COLORS.card, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border },
-  logoutText: { color: COLORS.packed, fontSize: 12, fontWeight: '600' },
-  userCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', gap: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
-  avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.primary + '60' },
-  avatarText: { color: COLORS.primary, fontSize: 22, fontWeight: '800' },
-  userInfo: { flex: 1, gap: 3 },
-  userName: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  userEmail: { color: COLORS.textSec, fontSize: 12 },
-  joinDate: { color: COLORS.textMuted, fontSize: 12, marginTop: 4 },
-  statsRow: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-around', borderWidth: 1, borderColor: COLORS.border },
-  stat: { alignItems: 'center', gap: 6 },
-  statNum: { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
-  statLabel: { color: COLORS.textSec, fontSize: 12, textAlign: 'center', lineHeight: 16 },
-  statDivider: { width: 1, backgroundColor: COLORS.border },
-  section: { gap: 14 },
-  sectionTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  favCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
-  favEmoji: { fontSize: 28 },
-  favName: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  emptyReports: { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  emptyEmoji: { fontSize: 40 },
-  emptyText: { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
-  reportList: { gap: 10 },
-  reportCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, gap: 8, borderWidth: 1, borderColor: COLORS.border },
-  pressed: { opacity: 0.75 },
-  reportTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  reportLocation: { color: COLORS.text, fontSize: 16, fontWeight: '600', flex: 1 },
-  reportTime: { color: COLORS.textMuted, fontSize: 12 },
-  reportComment: { color: COLORS.textSec, fontSize: 14, fontStyle: 'italic' },
-  reportDate: { color: COLORS.textMuted, fontSize: 12 },
-});
+import type { ThemePreference } from '@/constants/themes';
+
+const THEME_OPTIONS: { key: ThemePreference; icon: string; label: string }[] = [
+  { key: 'dark',   icon: '🌙', label: 'Dark'   },
+  { key: 'light',  icon: '☀️', label: 'Light'  },
+  { key: 'system', icon: '📱', label: 'System' },
+];
+
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    safe:           { flex: 1, backgroundColor: c.bg },
+    scroll:         { flex: 1 },
+    content:        { padding: 20, gap: 20, paddingBottom: 80 },
+    header:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    title:          { color: c.text, fontSize: 24, fontWeight: '700' },
+    logoutBtn:      { backgroundColor: c.card, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: c.border },
+    logoutText:     { color: COLORS.packed, fontSize: 12, fontWeight: '600' },
+    userCard:       { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', gap: 16, alignItems: 'center', borderWidth: 1, borderColor: c.border },
+    avatar:         { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.primary + '60' },
+    avatarText:     { color: COLORS.primary, fontSize: 22, fontWeight: '800' },
+    userInfo:       { flex: 1, gap: 3 },
+    userName:       { color: c.text, fontSize: 16, fontWeight: '600' },
+    userEmail:      { color: c.textSec, fontSize: 12 },
+    joinDate:       { color: c.textMuted, fontSize: 12, marginTop: 4 },
+    statsRow:       { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-around', borderWidth: 1, borderColor: c.border },
+    stat:           { alignItems: 'center', gap: 6 },
+    statNum:        { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
+    statLabel:      { color: c.textSec, fontSize: 12, textAlign: 'center', lineHeight: 16 },
+    statDivider:    { width: 1, backgroundColor: c.border },
+    section:        { gap: 14 },
+    sectionTitle:   { color: c.text, fontSize: 18, fontWeight: '700' },
+    favCard:        { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
+    favEmoji:       { fontSize: 28 },
+    favName:        { color: c.text, fontSize: 16, fontWeight: '600' },
+    emptyReports:   { alignItems: 'center', paddingVertical: 40, gap: 8 },
+    emptyEmoji:     { fontSize: 40 },
+    emptyText:      { color: c.textMuted, fontSize: 14, textAlign: 'center' },
+    reportList:     { gap: 10 },
+    reportCard:     { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 8, borderWidth: 1, borderColor: c.border },
+    pressed:        { opacity: 0.75 },
+    reportTop:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    reportLocation: { color: c.text, fontSize: 16, fontWeight: '600', flex: 1 },
+    reportTime:     { color: c.textMuted, fontSize: 12 },
+    reportComment:  { color: c.textSec, fontSize: 14, fontStyle: 'italic' },
+    reportDate:     { color: c.textMuted, fontSize: 12 },
+    // Theme selector
+    themeRow:       { flexDirection: 'row', gap: 10 },
+    themeBtn:       { flex: 1, alignItems: 'center', gap: 6, backgroundColor: c.card, borderRadius: 16, paddingVertical: 14, borderWidth: 1, borderColor: c.border },
+    themeBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
+    themeIcon:      { fontSize: 20 },
+    themeLabel:     { color: c.textSec, fontSize: 12, fontWeight: '600' },
+    themeLabelActive:{ color: COLORS.primary },
+    themeCheck:     { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
+  });
+}

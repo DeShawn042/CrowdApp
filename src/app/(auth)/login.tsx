@@ -13,10 +13,12 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 
 export default function LoginScreen() {
   const { login } = useAuth();
+  const { colors } = useTheme();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -42,7 +44,7 @@ export default function LoginScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
       <KeyboardAvoidingView
         style={styles.flex}
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
@@ -52,19 +54,19 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
             <Text style={styles.logo}>📍</Text>
-            <Text style={styles.appName}>Prescout</Text>
-            <Text style={styles.tagline}>Know before you go.</Text>
+            <Text style={[styles.appName, { color: colors.text }]}>Prescout</Text>
+            <Text style={[styles.tagline, { color: colors.textSec }]}>Know before you go.</Text>
           </View>
 
           <View style={styles.form}>
-            <Text style={styles.heading}>Welcome back</Text>
+            <Text style={[styles.heading, { color: colors.text }]}>Welcome back</Text>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={[styles.error, { color: COLORS.packed, backgroundColor: COLORS.packed + '1A' }]}>{error}</Text> : null}
 
             <View style={styles.field}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={[styles.label, { color: colors.textSec }]}>Email</Text>
               <TextInput
-                style={[styles.input, emailFocused && styles.inputFocused]}
+                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, emailFocused && styles.inputFocused]}
                 value={email}
                 onChangeText={setEmail}
                 placeholder="you@example.com"
@@ -77,9 +79,9 @@ export default function LoginScreen() {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Password</Text>
+              <Text style={[styles.label, { color: colors.textSec }]}>Password</Text>
               <TextInput
-                style={[styles.input, passFocused && styles.inputFocused]}
+                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, passFocused && styles.inputFocused]}
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
@@ -102,7 +104,7 @@ export default function LoginScreen() {
             </Pressable>
 
             <View style={styles.signupRow}>
-              <Text style={styles.signupText}>Don't have an account?</Text>
+              <Text style={[styles.signupText, { color: colors.textSec }]}>Don't have an account?</Text>
               <Pressable onPress={() => router.push('/(auth)/signup')}>
                 <Text style={styles.signupLink}> Sign up</Text>
               </Pressable>
