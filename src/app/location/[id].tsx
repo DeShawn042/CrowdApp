@@ -19,6 +19,7 @@ import { useReviews } from '@/hooks/useReviews';
 import { currentUserId } from '@/lib/supabase';
 import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS, getCrowdDisplay } from '@/utils/crowdUtils';
 import { fetchPlaceDetails } from '@/utils/googlePlaces';
+import BottomNav from '@/components/BottomNav';
 import MapChooserModal from '@/components/MapChooserModal';
 import QuickReportsSection from '@/components/QuickReportsSection';
 import QuickReportSummaries from '@/components/QuickReportSummaries';
@@ -536,6 +537,8 @@ export default function LocationDetailScreen() {
           onSubmit={content => claim.submitOwnerResponse(respondTarget.id, content)}
         />
       )}
+
+      <BottomNav />
     </SafeAreaView>
   );
 }
@@ -551,7 +554,7 @@ const styles = StyleSheet.create({
   headingBtnActive:{ backgroundColor: COLORS.primary + '20', borderColor: COLORS.primary },
   headingBtnText:  { color: COLORS.text, fontSize: 12, fontWeight: '700' },
   scroll:          { flex: 1 },
-  content:         { padding: 20, paddingTop: 0, gap: 20, paddingBottom: 60 },
+  content:         { padding: 20, paddingTop: 0, gap: 20, paddingBottom: 100 },
   notFound:        { flex: 1, alignItems: 'center', justifyContent: 'center' },
   notFoundText:    { color: COLORS.textSec, fontSize: 16 },
   centerState:     { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 14, padding: 32 },
