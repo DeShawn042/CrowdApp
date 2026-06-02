@@ -227,7 +227,7 @@ export default function LocationDetailScreen() {
         {/* Location info */}
         <View style={styles.infoSection}>
           <View style={styles.nameRow}>
-            <LocationPhoto type={location.type} photoUrl={photoUrl} size={72} borderRadius={16} />
+            <LocationPhoto type={location.type} photoUrl={photoUrl} size={72} borderRadius={16} name={location.name} />
             <View style={styles.nameCol}>
               <View style={styles.badgeRow}>
                 <View style={styles.ratingBadge}>

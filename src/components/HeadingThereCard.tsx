@@ -9,6 +9,15 @@ interface Props {
   onDismiss: () => void;
 }
 
+function LetterAvatar({ name }: { name: string }) {
+  const letter = name.trim()[0]?.toUpperCase() ?? '?';
+  return (
+    <View style={styles.imageFallback}>
+      <Text style={styles.imageFallbackText}>{letter}</Text>
+    </View>
+  );
+}
+
 export default function HeadingThereCard({ destination, onPress, onDismiss }: Props) {
   return (
     <View style={styles.wrapper}>
@@ -25,9 +34,7 @@ export default function HeadingThereCard({ destination, onPress, onDismiss }: Pr
         {destination.placeImage ? (
           <Image source={{ uri: destination.placeImage }} style={styles.image} />
         ) : (
-          <View style={styles.imageFallback}>
-            <Text style={styles.imageFallbackText}>📍</Text>
-          </View>
+          <LetterAvatar name={destination.placeName} />
         )}
         <View style={styles.info}>
           <Text style={styles.name} numberOfLines={1}>{destination.placeName}</Text>
@@ -48,14 +55,11 @@ const styles = StyleSheet.create({
   sectionLabel:      { color: COLORS.text, fontSize: 18, fontWeight: '700' },
   dismissBtn:        { paddingVertical: 2, paddingHorizontal: 4 },
   dismissText:       { color: COLORS.textMuted, fontSize: 12, fontWeight: '600' },
-
   card:              { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '50' },
   cardPressed:       { opacity: 0.75, transform: [{ scale: 0.98 }] },
-
   image:             { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface },
-  imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
-  imageFallbackText: { fontSize: 22 },
-
+  imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
+  imageFallbackText: { fontSize: 22, color: COLORS.primary, fontWeight: '700' },
   info:              { flex: 1, gap: 3 },
   name:              { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   address:           { color: COLORS.textSec, fontSize: 12 },

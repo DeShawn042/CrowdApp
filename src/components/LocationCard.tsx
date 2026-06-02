@@ -28,7 +28,7 @@ export default function LocationCard({ location, onPress, showDistance = true }:
     <Pressable
       style={({ pressed }) => [styles.card, pressed && styles.pressed]}
       onPress={onPress}>
-      <LocationPhoto type={location.type} photoUrl={photoUrl} size={48} borderRadius={14} />
+      <LocationPhoto type={location.type} photoUrl={photoUrl} size={48} borderRadius={14} name={location.name} />
       <View style={styles.info}>
         <View style={styles.nameRow}>
           <Text style={styles.name} numberOfLines={1}>{location.name}</Text>

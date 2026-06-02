@@ -63,7 +63,36 @@ export async function fetchBusinessWebsite(
 
 // ── Photo helpers ─────────────────────────────────────────────
 
+/**
+ * Fetch the first photo URL for a location.
+ * Uses the place_id (field mask: photos) for a precise, fast lookup.
+ * Falls back to a text search using name + address if the place_id fetch fails.
+ */
 export async function fetchPlacesPhotoUrl(location: Location): Promise<string | null> {
+  if (!API_KEY) return null;
+
+  // Fast path: fetch by place_id directly
+  if (location.id) {
+    try {
+      const res = await fetch(`${BASE}/${location.id}?fields=photos`, {
+        headers: {
+          'X-Goog-Api-Key': API_KEY,
+          'X-Goog-FieldMask': 'photos',
+        },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const photoName = data?.photos?.[0]?.name;
+        if (photoName) {
+          return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=400&key=${API_KEY}`;
+        }
+      }
+    } catch {
+      // fall through to text search
+    }
+  }
+
+  // Fallback: text search by name + address
   const data = await textSearchSingleField(
     `${location.name} ${location.address}`,
     'places.photos',

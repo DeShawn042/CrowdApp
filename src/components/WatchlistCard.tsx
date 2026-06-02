@@ -41,7 +41,9 @@ export default function WatchlistCard({ item, onPress, onRemove, onRenew }: Prop
         <Image source={{ uri: item.placeImage }} style={styles.image} />
       ) : (
         <View style={styles.imageFallback}>
-          <Text style={styles.imageFallbackText}>📍</Text>
+          <Text style={styles.imageFallbackText}>
+            {item.placeName.trim()[0]?.toUpperCase() ?? '?'}
+          </Text>
         </View>
       )}
 
@@ -74,8 +76,8 @@ const styles = StyleSheet.create({
   card:              { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
   cardPressed:       { opacity: 0.75, transform: [{ scale: 0.98 }] },
   image:             { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface },
-  imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
-  imageFallbackText: { fontSize: 22 },
+  imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
+  imageFallbackText: { fontSize: 20, color: COLORS.primary, fontWeight: '700' },
   info:              { flex: 1, gap: 3 },
   name:              { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   alertRow:          { flexDirection: 'row', alignItems: 'center', gap: 5 },
