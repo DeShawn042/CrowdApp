@@ -95,7 +95,7 @@ export default function LoginScreen() {
               onPress={handleLogin}
               disabled={loading}>
               {loading ? (
-                <ActivityIndicator color="#fff" />
+                <ActivityIndicator color={COLORS.text} />
               ) : (
                 <Text style={styles.buttonText}>Log In</Text>
               )}
@@ -124,9 +124,9 @@ const styles = StyleSheet.create({
   tagline: { color: COLORS.textSec, fontSize: 16 },
   form: { gap: 16 },
   heading: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginBottom: 4 },
-  error: { color: COLORS.packed, backgroundColor: 'rgba(239,68,68,0.1)', padding: 12, borderRadius: 10, fontSize: 14 },
+  error: { color: COLORS.packed, backgroundColor: COLORS.packed + '1A', padding: 12, borderRadius: 14, fontSize: 14 },
   field: { gap: 6 },
-  label: { color: COLORS.textSec, fontSize: 13, fontWeight: '500' },
+  label: { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
   input: {
     backgroundColor: COLORS.inputBg,
     borderWidth: 1,
@@ -144,8 +144,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginTop: 8,
   },
-  buttonPressed: { opacity: 0.85, transform: [{ scale: 0.99 }] },
-  buttonText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+  buttonPressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
+  buttonText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   signupRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 4 },
   signupText: { color: COLORS.textSec, fontSize: 14 },
   signupLink: { color: COLORS.primary, fontSize: 14, fontWeight: '600' },

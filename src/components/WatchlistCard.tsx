@@ -71,20 +71,20 @@ export default function WatchlistCard({ item, onPress, onRemove, onRenew }: Prop
 }
 
 const styles = StyleSheet.create({
-  card:              { backgroundColor: COLORS.card, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
-  cardPressed:       { opacity: 0.75, transform: [{ scale: 0.99 }] },
+  card:              { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
+  cardPressed:       { opacity: 0.75, transform: [{ scale: 0.98 }] },
   image:             { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface },
   imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
   imageFallbackText: { fontSize: 22 },
   info:              { flex: 1, gap: 3 },
-  name:              { color: COLORS.text, fontSize: 14, fontWeight: '700' },
+  name:              { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   alertRow:          { flexDirection: 'row', alignItems: 'center', gap: 5 },
   alertEmoji:        { fontSize: 13 },
   alertText:         { color: COLORS.textSec, fontSize: 12 },
-  expiry:            { color: COLORS.textMuted, fontSize: 11 },
+  expiry:            { color: COLORS.textMuted, fontSize: 12 },
   expirySoon:        { color: COLORS.moderate },
   actions:           { alignItems: 'center', gap: 8 },
-  renewBtn:          { backgroundColor: COLORS.primary + '20', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: COLORS.primary + '50' },
-  renewText:         { color: COLORS.primary, fontSize: 11, fontWeight: '700' },
+  renewBtn:          { backgroundColor: COLORS.primary + '20', borderRadius: 14, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: COLORS.primary + '50' },
+  renewText:         { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
   removeText:        { color: COLORS.textMuted, fontSize: 18, fontWeight: '600' },
 });

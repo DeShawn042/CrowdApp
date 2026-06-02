@@ -49,16 +49,16 @@ const styles = StyleSheet.create({
   dismissBtn:        { paddingVertical: 2, paddingHorizontal: 4 },
   dismissText:       { color: COLORS.textMuted, fontSize: 12, fontWeight: '600' },
 
-  card:              { backgroundColor: COLORS.card, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '50' },
-  cardPressed:       { opacity: 0.75, transform: [{ scale: 0.99 }] },
+  card:              { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '50' },
+  cardPressed:       { opacity: 0.75, transform: [{ scale: 0.98 }] },
 
-  image:             { width: 52, height: 52, borderRadius: 12, backgroundColor: COLORS.surface },
-  imageFallback:     { width: 52, height: 52, borderRadius: 12, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
-  imageFallbackText: { fontSize: 24 },
+  image:             { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface },
+  imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface, alignItems: 'center', justifyContent: 'center' },
+  imageFallbackText: { fontSize: 22 },
 
   info:              { flex: 1, gap: 3 },
-  name:              { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  name:              { color: COLORS.text, fontSize: 16, fontWeight: '600' },
   address:           { color: COLORS.textSec, fontSize: 12 },
-  expiry:            { color: COLORS.primary, fontSize: 11, fontWeight: '600' },
+  expiry:            { color: COLORS.primary, fontSize: 12, fontWeight: '600' },
   chevron:           { color: COLORS.textMuted, fontSize: 20 },
 });

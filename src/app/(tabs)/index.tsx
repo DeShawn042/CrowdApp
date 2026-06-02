@@ -119,7 +119,9 @@ export default function HomeScreen() {
             </View>
           ) : trending.length === 0 ? (
             <View style={styles.emptyBox}>
-              <Text style={styles.emptyText}>No trending places yet.</Text>
+              <Text style={{ fontSize: 40 }}>🔥</Text>
+              <Text style={[styles.emptyText, { color: COLORS.textSec, fontWeight: '600', fontSize: 16 }]}>No trending places yet</Text>
+              <Text style={styles.emptyText}>Search for nearby places to get started</Text>
             </View>
           ) : (
             <ScrollView
@@ -180,13 +182,13 @@ export default function HomeScreen() {
 const styles = StyleSheet.create({
   safe:    { flex: 1, backgroundColor: COLORS.bg },
   scroll:  { flex: 1 },
-  content: { padding: 20, gap: 24, paddingBottom: 48 },
+  content: { padding: 20, gap: 24, paddingBottom: 80 },
 
   header:   { gap: 2 },
   greeting: { color: COLORS.textSec, fontSize: 14 },
-  userName: { color: COLORS.text, fontSize: 26, fontWeight: '800' },
+  userName: { color: COLORS.text, fontSize: 24, fontWeight: '700' },
 
-  watchlistRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 14, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border },
+  watchlistRow:    { flexDirection: 'row', alignItems: 'center', backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: COLORS.border },
   watchlistText:   { flex: 1, color: COLORS.textSec, fontSize: 14, fontWeight: '600' },
   watchlistChevron:{ color: COLORS.textMuted, fontSize: 18 },
   section:    { gap: 14 },
@@ -196,23 +198,22 @@ const styles = StyleSheet.create({
 
   cardRow: { gap: 10, paddingRight: 4 },
 
-  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 20 },
+  loadingRow: { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 40 },
   loadingText:{ color: COLORS.textMuted, fontSize: 14 },
 
-  emptyBox:  { paddingVertical: 20 },
+  emptyBox:  { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyText: { color: COLORS.textMuted, fontSize: 14 },
 
   emptyFavs: {
     backgroundColor: COLORS.card,
     borderRadius: 16,
-    padding: 24,
+    padding: 16,
     alignItems: 'center',
     gap: 8,
     borderWidth: 1,
     borderColor: COLORS.border,
-    borderStyle: 'dashed',
   },
-  emptyFavsIcon: { fontSize: 32 },
-  emptyFavsText: { color: COLORS.textSec, fontSize: 15, fontWeight: '600', textAlign: 'center' },
-  emptyFavsHint: { color: COLORS.textMuted, fontSize: 13, textAlign: 'center' },
+  emptyFavsIcon: { fontSize: 40 },
+  emptyFavsText: { color: COLORS.textSec, fontSize: 16, fontWeight: '600', textAlign: 'center' },
+  emptyFavsHint: { color: COLORS.textMuted, fontSize: 12, textAlign: 'center' },
 });

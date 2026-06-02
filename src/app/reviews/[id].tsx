@@ -65,6 +65,7 @@ export default function GoogleReviewsScreen() {
         {reviews.length === 0 ? (
           <View style={styles.empty}>
             <Text style={styles.emptyEmoji}>💬</Text>
+            <Text style={[styles.emptyText, { color: COLORS.textSec, fontWeight: '600', fontSize: 16 }]}>No reviews yet</Text>
             <Text style={styles.emptyText}>No preview reviews available from Google.</Text>
           </View>
         ) : (
@@ -86,21 +87,21 @@ const styles = StyleSheet.create({
   backBtn:        { paddingVertical: 4, alignSelf: 'flex-start' },
   backText:       { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
   scroll:         { flex: 1 },
-  content:        { padding: 20, paddingTop: 4, gap: 20, paddingBottom: 60 },
+  content:        { padding: 20, paddingTop: 4, gap: 20, paddingBottom: 80 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  errorText:      { color: COLORS.textMuted, fontSize: 15 },
-  locationName:   { color: COLORS.text, fontSize: 22, fontWeight: '800', lineHeight: 28 },
-  summaryCard:    { backgroundColor: COLORS.card, borderRadius: 16, padding: 18, gap: 14, borderWidth: 1, borderColor: COLORS.border },
+  errorText:      { color: COLORS.textMuted, fontSize: 14 },
+  locationName:   { color: COLORS.text, fontSize: 24, fontWeight: '700', lineHeight: 30 },
+  summaryCard:    { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: COLORS.border },
   googleBadgeRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: '#4285F4', alignItems: 'center', justifyContent: 'center' },
-  googleBadgeText:{ color: '#fff', fontSize: 12, fontWeight: '800' },
-  summaryLabel:   { color: COLORS.textSec, fontSize: 13, fontWeight: '600' },
+  googleBadge:    { width: 22, height: 22, borderRadius: 11, backgroundColor: COLORS.google, alignItems: 'center', justifyContent: 'center' },
+  googleBadgeText:{ color: COLORS.text, fontSize: 12, fontWeight: '800' },
+  summaryLabel:   { color: COLORS.textSec, fontSize: 14, fontWeight: '600' },
   ratingRow:      { flexDirection: 'row', alignItems: 'center', gap: 14 },
-  ratingNumber:   { color: COLORS.text, fontSize: 42, fontWeight: '800', lineHeight: 48 },
+  ratingNumber:   { color: COLORS.text, fontSize: 42, fontWeight: '700', lineHeight: 48 },
   ratingRight:    { gap: 6 },
-  reviewCount:    { color: COLORS.textMuted, fontSize: 13 },
+  reviewCount:    { color: COLORS.textMuted, fontSize: 12 },
   listCard:       { backgroundColor: COLORS.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: COLORS.border },
-  empty:          { alignItems: 'center', paddingVertical: 48, gap: 10 },
-  emptyEmoji:     { fontSize: 36 },
+  empty:          { alignItems: 'center', paddingVertical: 40, gap: 8 },
+  emptyEmoji:     { fontSize: 40 },
   emptyText:      { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
 });

@@ -276,8 +276,8 @@ const styles = StyleSheet.create({
   scroll:      { flex: 1 },
 
   /* ── Browse / category grid ── */
-  browseSection: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 32 },
-  browseTitle:   { color: COLORS.text, fontSize: 20, fontWeight: '700', marginBottom: 16 },
+  browseSection: { paddingHorizontal: 20, paddingTop: 4, paddingBottom: 80 },
+  browseTitle:   { color: COLORS.text, fontSize: 18, fontWeight: '700', marginBottom: 16 },
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -294,7 +294,7 @@ const styles = StyleSheet.create({
   },
   tilePressed: { opacity: 0.7, transform: [{ scale: 0.97 }] },
   tileEmoji:   { fontSize: 28 },
-  tileLabel:   { fontSize: 13, fontWeight: '600', lineHeight: 18 },
+  tileLabel:   { fontSize: 12, fontWeight: '600', lineHeight: 18 },
 
   /* ── Active category chip ── */
   catChipRow:   { paddingHorizontal: 20, paddingBottom: 8 },
@@ -314,17 +314,17 @@ const styles = StyleSheet.create({
     borderColor: COLORS.border,
   },
   crowdChipActive:    { borderWidth: 1 },
-  crowdChipText:      { color: COLORS.textSec, fontSize: 13, fontWeight: '500' },
-  crowdChipTextActive:{ color: '#fff' },
+  crowdChipText:      { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
+  crowdChipTextActive:{ color: COLORS.text },
 
   /* ── Results ── */
-  results:      { padding: 20, paddingTop: 4, gap: 12 },
-  loadingBox:   { alignItems: 'center', paddingTop: 60, gap: 14 },
+  results:      { padding: 20, paddingTop: 4, gap: 12, paddingBottom: 80 },
+  loadingBox:   { alignItems: 'center', paddingVertical: 40, gap: 14 },
   loadingText:  { color: COLORS.textMuted, fontSize: 14 },
   resultCount:  { color: COLORS.textMuted, fontSize: 12 },
   list:         { gap: 10 },
-  empty:        { alignItems: 'center', paddingTop: 60, gap: 8 },
-  emptyEmoji:   { fontSize: 48 },
-  emptyTitle:   { color: COLORS.textSec, fontSize: 18, fontWeight: '600' },
+  empty:        { alignItems: 'center', paddingVertical: 40, gap: 8 },
+  emptyEmoji:   { fontSize: 40 },
+  emptyTitle:   { color: COLORS.textSec, fontSize: 16, fontWeight: '600' },
   emptySubtitle:{ color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
 });

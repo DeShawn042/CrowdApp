@@ -114,7 +114,10 @@ export default function OwnerDashboard() {
         </View>
 
         {loading ? (
-          <ActivityIndicator color={COLORS.primary} style={{ marginTop: 40 }} />
+          <View style={styles.loadingBox}>
+            <ActivityIndicator color={COLORS.primary} size="large" />
+            <Text style={styles.loadingText}>Loading dashboard…</Text>
+          </View>
         ) : stats ? (
           <>
             {/* Report stats */}
@@ -208,21 +211,23 @@ const styles = StyleSheet.create({
   header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
   backBtn:        { paddingVertical: 4, paddingHorizontal: 20 },
   backText:       { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  headerTitle:    { color: COLORS.text, fontSize: 17, fontWeight: '600' },
-  content:        { padding: 20, gap: 16, paddingBottom: 60 },
+  headerTitle:    { color: COLORS.text, fontSize: 16, fontWeight: '700' },
+  content:        { padding: 20, gap: 16, paddingBottom: 80 },
+  loadingBox:     { alignItems: 'center', paddingVertical: 40, gap: 14 },
+  loadingText:    { color: COLORS.textMuted, fontSize: 14 },
   center:         { flex: 1, alignItems: 'center', justifyContent: 'center' },
   locHeader:      { gap: 6 },
-  locName:        { color: COLORS.text, fontSize: 22, fontWeight: '800' },
-  verifiedBadge:  { alignSelf: 'flex-start', backgroundColor: COLORS.primary + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 10, borderWidth: 1, borderColor: COLORS.primary + '50' },
+  locName:        { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  verifiedBadge:  { alignSelf: 'flex-start', backgroundColor: COLORS.primary + '20', paddingHorizontal: 10, paddingVertical: 4, borderRadius: 14, borderWidth: 1, borderColor: COLORS.primary + '50' },
   verifiedTxt:    { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
   card:           { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: COLORS.border },
-  cardTitle:      { color: COLORS.text, fontSize: 15, fontWeight: '700' },
+  cardTitle:      { color: COLORS.text, fontSize: 18, fontWeight: '700' },
   statsRow:       { flexDirection: 'row', justifyContent: 'space-around' },
   stat:           { alignItems: 'center', gap: 4 },
-  statNum:        { color: COLORS.primary, fontSize: 28, fontWeight: '800' },
+  statNum:        { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
   statLabel:      { color: COLORS.textMuted, fontSize: 12, textAlign: 'center' },
   statDivider:    { width: 1, backgroundColor: COLORS.border },
-  muted:          { color: COLORS.textMuted, fontSize: 13 },
+  muted:          { color: COLORS.textMuted, fontSize: 14 },
   breakdown:      { gap: 10 },
   breakdownRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   breakdownLabel: { width: 68, fontSize: 12, fontWeight: '600' },
@@ -232,6 +237,6 @@ const styles = StyleSheet.create({
   reviewRow:      { gap: 4 },
   reviewBorder:   { paddingTop: 12, borderTopWidth: 1, borderTopColor: COLORS.border },
   reviewTop:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  reviewName:     { color: COLORS.text, fontSize: 13, fontWeight: '600', flex: 1 },
-  reviewContent:  { color: COLORS.textSec, fontSize: 13, lineHeight: 18 },
+  reviewName:     { color: COLORS.text, fontSize: 14, fontWeight: '600', flex: 1 },
+  reviewContent:  { color: COLORS.textSec, fontSize: 14, lineHeight: 20 },
 });

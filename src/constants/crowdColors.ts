@@ -19,6 +19,8 @@ export const COLORS = {
   moderate: '#F59E0B',
   packed: '#EF4444',
 
+  google: '#4285F4',
+
   tabBg: '#16161F',
   tabActive: '#7C6FFF',
   tabInactive: '#55555F',

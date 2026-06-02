@@ -105,7 +105,8 @@ export default function ProfileScreen() {
           {myReports.length === 0 ? (
             <View style={styles.emptyReports}>
               <Text style={styles.emptyEmoji}>📝</Text>
-              <Text style={styles.emptyText}>No reports yet. Start reporting crowd levels!</Text>
+              <Text style={[styles.emptyText, { color: COLORS.textSec, fontWeight: '600', fontSize: 16 }]}>No reports yet</Text>
+              <Text style={styles.emptyText}>Start reporting crowd levels at nearby places!</Text>
             </View>
           ) : (
             <View style={styles.reportList}>
@@ -141,37 +142,37 @@ export default function ProfileScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   scroll: { flex: 1 },
-  content: { padding: 20, gap: 20, paddingBottom: 40 },
+  content: { padding: 20, gap: 20, paddingBottom: 80 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  title: { color: COLORS.text, fontSize: 28, fontWeight: '800' },
-  logoutBtn: { backgroundColor: COLORS.card, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: COLORS.border },
-  logoutText: { color: COLORS.packed, fontSize: 13, fontWeight: '600' },
-  userCard: { backgroundColor: COLORS.card, borderRadius: 20, padding: 20, flexDirection: 'row', gap: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
+  title: { color: COLORS.text, fontSize: 24, fontWeight: '700' },
+  logoutBtn: { backgroundColor: COLORS.card, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: COLORS.border },
+  logoutText: { color: COLORS.packed, fontSize: 12, fontWeight: '600' },
+  userCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', gap: 16, alignItems: 'center', borderWidth: 1, borderColor: COLORS.border },
   avatar: { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.primary + '60' },
   avatarText: { color: COLORS.primary, fontSize: 22, fontWeight: '800' },
   userInfo: { flex: 1, gap: 3 },
-  userName: { color: COLORS.text, fontSize: 20, fontWeight: '700' },
-  userEmail: { color: COLORS.textSec, fontSize: 13 },
+  userName: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
+  userEmail: { color: COLORS.textSec, fontSize: 12 },
   joinDate: { color: COLORS.textMuted, fontSize: 12, marginTop: 4 },
-  statsRow: { backgroundColor: COLORS.card, borderRadius: 20, padding: 20, flexDirection: 'row', justifyContent: 'space-around', borderWidth: 1, borderColor: COLORS.border },
+  statsRow: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-around', borderWidth: 1, borderColor: COLORS.border },
   stat: { alignItems: 'center', gap: 6 },
-  statNum: { color: COLORS.primary, fontSize: 28, fontWeight: '800' },
+  statNum: { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
   statLabel: { color: COLORS.textSec, fontSize: 12, textAlign: 'center', lineHeight: 16 },
   statDivider: { width: 1, backgroundColor: COLORS.border },
-  section: { gap: 12 },
+  section: { gap: 14 },
   sectionTitle: { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  favCard: { backgroundColor: COLORS.card, borderRadius: 14, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
+  favCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
   favEmoji: { fontSize: 28 },
   favName: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  emptyReports: { alignItems: 'center', paddingVertical: 32, gap: 8 },
+  emptyReports: { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyEmoji: { fontSize: 40 },
   emptyText: { color: COLORS.textMuted, fontSize: 14, textAlign: 'center' },
   reportList: { gap: 10 },
-  reportCard: { backgroundColor: COLORS.card, borderRadius: 14, padding: 14, gap: 8, borderWidth: 1, borderColor: COLORS.border },
+  reportCard: { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, gap: 8, borderWidth: 1, borderColor: COLORS.border },
   pressed: { opacity: 0.75 },
   reportTop: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  reportLocation: { color: COLORS.text, fontSize: 15, fontWeight: '600', flex: 1 },
-  reportTime: { color: COLORS.textMuted, fontSize: 11 },
-  reportComment: { color: COLORS.textSec, fontSize: 13, fontStyle: 'italic' },
-  reportDate: { color: COLORS.textMuted, fontSize: 11 },
+  reportLocation: { color: COLORS.text, fontSize: 16, fontWeight: '600', flex: 1 },
+  reportTime: { color: COLORS.textMuted, fontSize: 12 },
+  reportComment: { color: COLORS.textSec, fontSize: 14, fontStyle: 'italic' },
+  reportDate: { color: COLORS.textMuted, fontSize: 12 },
 });

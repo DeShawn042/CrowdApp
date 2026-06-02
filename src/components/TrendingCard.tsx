@@ -57,9 +57,9 @@ const styles = StyleSheet.create({
   rankBadge:  { position: 'absolute', top: 10, right: 10, backgroundColor: COLORS.primary + '25', borderRadius: 8, paddingHorizontal: 6, paddingVertical: 2 },
   rankText:   { color: COLORS.primary, fontSize: 10, fontWeight: '700' },
   typeIcon:   { fontSize: 28 },
-  name:       { color: COLORS.text, fontSize: 13, fontWeight: '600', lineHeight: 18, paddingRight: 24 },
-  crowdPill:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 8, paddingHorizontal: 6, paddingVertical: 3, alignSelf: 'flex-start' },
+  name:       { color: COLORS.text, fontSize: 14, fontWeight: '600', lineHeight: 20, paddingRight: 24 },
+  crowdPill:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 14, paddingHorizontal: 6, paddingVertical: 3, alignSelf: 'flex-start' },
   dot:        { width: 5, height: 5, borderRadius: 3 },
-  crowdText:  { fontSize: 11, fontWeight: '600' },
-  reports:    { color: COLORS.textMuted, fontSize: 11 },
+  crowdText:  { fontSize: 12, fontWeight: '600' },
+  reports:    { color: COLORS.textMuted, fontSize: 12 },
 });

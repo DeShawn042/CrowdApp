@@ -75,12 +75,12 @@ const styles = StyleSheet.create({
   },
   time: {
     color: COLORS.textMuted,
-    fontSize: 11,
+    fontSize: 12,
   },
   comment: {
     color: COLORS.textSec,
-    fontSize: 13,
+    fontSize: 14,
     fontStyle: 'italic',
-    lineHeight: 18,
+    lineHeight: 20,
   },
 });
