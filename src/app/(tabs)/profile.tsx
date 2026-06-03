@@ -7,6 +7,7 @@ import WatchlistCard from '@/components/WatchlistCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
+import type { ThemePreference } from '@/constants/themes';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
@@ -172,8 +173,6 @@ export default function ProfileScreen() {
     </SafeAreaView>
   );
 }
-
-import type { ThemePreference } from '@/constants/themes';
 
 const THEME_OPTIONS: { key: ThemePreference; icon: string; label: string }[] = [
   { key: 'dark',   icon: '🌙', label: 'Dark'   },

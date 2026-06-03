@@ -85,7 +85,8 @@ export default function GoogleReviewsScreen() {
   );
 }
 
-function makeStyles(c: AppColors) { return StyleSheet.create({
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
   safe:           { flex: 1, backgroundColor: c.bg },
   header:         { paddingHorizontal: 20, paddingVertical: 12 },
   backBtn:        { paddingVertical: 4, alignSelf: 'flex-start' },
@@ -108,4 +109,5 @@ function makeStyles(c: AppColors) { return StyleSheet.create({
   empty:          { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyEmoji:     { fontSize: 40 },
   emptyText:      { color: c.textMuted, fontSize: 14, textAlign: 'center' },
-}); }
+  });
+}

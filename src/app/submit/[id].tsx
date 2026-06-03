@@ -199,7 +199,8 @@ export default function SubmitReportScreen() {
   );
 }
 
-function makeStyles(c: AppColors) { return StyleSheet.create({
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
   safe:               { flex: 1, backgroundColor: c.bg },
   flex:               { flex: 1 },
   handle:             { width: 40, height: 4, backgroundColor: c.border, borderRadius: 2, alignSelf: 'center', marginTop: 12 },
@@ -235,4 +236,5 @@ function makeStyles(c: AppColors) { return StyleSheet.create({
   submitBtnDisabled:  { opacity: 0.5 },
   submitBtnPressed:   { opacity: 0.75, transform: [{ scale: 0.98 }] },
   submitBtnText:      { color: c.text, fontSize: 16, fontWeight: '600' },
-}); }
+  });
+}

@@ -210,7 +210,8 @@ export default function OwnerDashboard() {
   );
 }
 
-function makeStyles(c: AppColors) { return StyleSheet.create({
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
   safe:           { flex: 1, backgroundColor: c.bg },
   header:         { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 20, paddingVertical: 12 },
   backBtn:        { paddingVertical: 4, paddingHorizontal: 20 },
@@ -243,4 +244,5 @@ function makeStyles(c: AppColors) { return StyleSheet.create({
   reviewTop:      { flexDirection: 'row', alignItems: 'center', gap: 8 },
   reviewName:     { color: c.text, fontSize: 14, fontWeight: '600', flex: 1 },
   reviewContent:  { color: c.textSec, fontSize: 14, lineHeight: 20 },
-}); }
+  });
+}
