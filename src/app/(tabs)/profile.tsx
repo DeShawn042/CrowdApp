@@ -1,6 +1,6 @@
 import { router, useFocusEffect } from 'expo-router';
 import React, { useCallback } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import WatchlistCard from '@/components/WatchlistCard';
@@ -29,6 +29,11 @@ export default function ProfileScreen() {
     .slice(0, 2);
 
   function confirmLogout() {
+    if (Platform.OS === 'web') {
+      // Alert.alert is a no-op on web — confirm natively instead
+      if (window.confirm('Are you sure you want to log out?')) logout();
+      return;
+    }
     Alert.alert('Log out', 'Are you sure you want to log out?', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Log out', style: 'destructive', onPress: logout },
