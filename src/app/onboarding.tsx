@@ -33,21 +33,21 @@ const SECTIONS = [
     icon: '📊',
     title: 'Report What You See',
     description:
-      'Submit a quick crowd report when you're at a location. Your report helps others know what to expect — and expires in 60 minutes so it's always fresh.',
+      "Submit a quick crowd report when you're at a location. Your report helps others know what to expect — and expires in 60 minutes so it's always fresh.",
   },
   {
     id: 'watchlist',
     icon: '👁️',
     title: 'Watch Your Spots',
     description:
-      'Add any location to your watchlist and set your preferred crowd level. We'll notify you the moment it hits that level — so you can go at the perfect time.',
+      "Add any location to your watchlist and set your preferred crowd level. We'll notify you the moment it hits that level — so you can go at the perfect time.",
   },
   {
     id: 'heading',
     icon: '🚗',
     title: 'Heading There',
     description:
-      'Let Prescout know you're on your way somewhere. It pins to your home screen so you can quickly report the crowd when you arrive — no searching needed.',
+      "Let Prescout know you're on your way somewhere. It pins to your home screen so you can quickly report the crowd when you arrive — no searching needed.",
   },
   {
     id: 'permissions',
