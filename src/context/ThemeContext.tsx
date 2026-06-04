@@ -1,6 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
-import { Appearance } from 'react-native';
+import { Appearance, useColorScheme } from 'react-native';
 import { darkColors, lightColors } from '@/constants/themes';
 import type { AppColors, ThemePreference } from '@/constants/themes';
 
@@ -18,40 +18,43 @@ const ThemeContext = createContext<ThemeContextValue>({
   setPreference: () => {},
 });
 
-function resolveColors(preference: ThemePreference): AppColors {
-  if (preference === 'light') return lightColors;
-  if (preference === 'dark')  return darkColors;
-  // system
-  const scheme = Appearance.getColorScheme();
-  return scheme === 'light' ? lightColors : darkColors;
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
+  // useColorScheme is the primary reactive source (updates on re-render)
+  const systemScheme = useColorScheme();
+
+  // Appearance.addChangeListener is the backup imperative listener —
+  // catches system changes on Android where useColorScheme can lag
+  const [listenerScheme, setListenerScheme] = useState<'light' | 'dark'>(
+    () => Appearance.getColorScheme() === 'light' ? 'light' : 'dark'
+  );
+
   const [preference, setPreferenceState] = useState<ThemePreference>('system');
-  const [colors, setColors] = useState<AppColors>(resolveColors('system'));
+
+  // Register Appearance listener
+  useEffect(() => {
+    const sub = Appearance.addChangeListener(({ colorScheme }) => {
+      setListenerScheme(colorScheme === 'light' ? 'light' : 'dark');
+    });
+    return () => sub.remove();
+  }, []);
 
   // Load saved preference on mount
   useEffect(() => {
     AsyncStorage.getItem(STORAGE_KEY).then(saved => {
-      const pref = (saved as ThemePreference) ?? 'system';
-      setPreferenceState(pref);
-      setColors(resolveColors(pref));
+      if (saved) setPreferenceState(saved as ThemePreference);
     });
   }, []);
 
-  // Listen for system appearance changes when preference is 'system'
-  useEffect(() => {
-    const sub = Appearance.addChangeListener(() => {
-      if (preference === 'system') {
-        setColors(resolveColors('system'));
-      }
-    });
-    return () => sub.remove();
-  }, [preference]);
+  // useColorScheme wins if available, listenerScheme is the fallback
+  const resolvedScheme = systemScheme ?? listenerScheme;
+
+  const colors: AppColors =
+    preference === 'light' ? lightColors
+    : preference === 'dark'  ? darkColors
+    : resolvedScheme === 'light' ? lightColors : darkColors;
 
   const setPreference = useCallback((p: ThemePreference) => {
     setPreferenceState(p);
-    setColors(resolveColors(p));
     AsyncStorage.setItem(STORAGE_KEY, p);
   }, []);
 

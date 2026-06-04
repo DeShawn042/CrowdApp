@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Platform } from 'react-native';
-import * as Notifications from 'expo-notifications';
+import Constants from 'expo-constants';
 import { currentUserId, isSupabaseConfigured, supabase } from '@/lib/supabase';
+
+const isExpoGo = Constants.appOwnership === 'expo';
 import type { CrowdLevel } from '@/data/mockData';
 import { CROWD_LABELS } from '@/utils/crowdUtils';
 
@@ -164,8 +166,9 @@ export function useWatchlist() {
 }
 
 async function sendWatchlistNotification(item: WatchlistItem, currentLevel: AlertLevel) {
-  if (Platform.OS === 'web') return;
+  if (Platform.OS === 'web' || isExpoGo) return;
   try {
+    const Notifications = await import('expo-notifications');
     await Notifications.scheduleNotificationAsync({
       content: {
         title: `👁️ ${item.placeName}`,

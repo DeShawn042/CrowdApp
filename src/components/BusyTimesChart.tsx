@@ -1,8 +1,10 @@
 import React, { useEffect, useRef } from 'react';
 import { ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
 import { busyLevelFromPercent, CROWD_COLORS } from '@/utils/crowdUtils';
 import type { CrowdLevel } from '@/data/mockData';
+import type { AppColors } from '@/constants/themes';
 
 // ── Layout constants ──────────────────────────────────────────
 const MIN_BAR_W = 28;
@@ -87,6 +89,7 @@ export default function BusyTimesChart({
   openHour,
   closeHour,
 }: Props) {
+  const { colors } = useTheme();
   const { width: screenW } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
 
@@ -148,6 +151,8 @@ export default function BusyTimesChart({
     dataSource === 'prescout' ? 'Prescout Live'
     : dataSource === 'google' ? 'Google Live'
     : 'Typical pattern';
+
+  const styles = makeStyles(colors);
 
   return (
     <View style={styles.container}>
@@ -329,50 +334,52 @@ export default function BusyTimesChart({
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    backgroundColor: COLORS.card,
-    borderRadius: 16,
-    padding: 16,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    gap: 4,
-  },
-  title:    { color: COLORS.text,      fontSize: 15, fontWeight: '600' },
-  subtitle: { color: COLORS.textMuted, fontSize: 11, marginBottom: 8  },
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    container: {
+      backgroundColor: c.card,
+      borderRadius: 16,
+      padding: 16,
+      borderWidth: 1,
+      borderColor: c.border,
+      gap: 4,
+    },
+    title:    { color: c.text,      fontSize: 15, fontWeight: '600' },
+    subtitle: { color: c.textMuted, fontSize: 11, marginBottom: 8  },
 
-  chartWrapper:  { overflow: 'hidden' },
-  scrollContent: { paddingBottom: 2   },
+    chartWrapper:  { overflow: 'hidden' },
+    scrollContent: { paddingBottom: 2   },
 
-  col:     { alignItems: 'center' },
-  nowArea: { height: NOW_H, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 3 },
-  nowChip: { borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1 },
-  nowText: { fontSize: 7, fontWeight: '800', letterSpacing: 0.4 },
+    col:     { alignItems: 'center' },
+    nowArea: { height: NOW_H, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 3 },
+    nowChip: { borderRadius: 4, paddingHorizontal: 3, paddingVertical: 1 },
+    nowText: { fontSize: 7, fontWeight: '800', letterSpacing: 0.4 },
 
-  barArea: {
-    height: CHART_H,
-    justifyContent: 'flex-end',
-    alignItems: 'center',
-    position: 'relative',
-  },
-  colHighlight: {
-    position: 'absolute',
-    top: 0, bottom: 0, left: 0, right: 0,
-    opacity: 0.07,
-  },
-  bar:     { borderRadius: 3, alignSelf: 'center' },
-  liveBar: { position: 'absolute', bottom: 0, borderRadius: 3, alignSelf: 'center' },
-  liveDot: { position: 'absolute', width: 5, height: 5, borderRadius: 3, alignSelf: 'center' },
+    barArea: {
+      height: CHART_H,
+      justifyContent: 'flex-end',
+      alignItems: 'center',
+      position: 'relative',
+    },
+    colHighlight: {
+      position: 'absolute',
+      top: 0, bottom: 0, left: 0, right: 0,
+      opacity: 0.07,
+    },
+    bar:     { borderRadius: 3, alignSelf: 'center' },
+    liveBar: { position: 'absolute', bottom: 0, borderRadius: 3, alignSelf: 'center' },
+    liveDot: { position: 'absolute', width: 5, height: 5, borderRadius: 3, alignSelf: 'center' },
 
-  label:    { height: LBL_H, color: COLORS.textMuted, marginTop: 3, textAlign: 'center' },
+    label:    { height: LBL_H, color: c.textMuted, marginTop: 3, textAlign: 'center' },
 
-  fadeRight: { position: 'absolute', top: 0, bottom: 0, right: 0, width: 36, flexDirection: 'row' },
-  fadeSlice: { flex: 1, backgroundColor: COLORS.card },
+    fadeRight: { position: 'absolute', top: 0, bottom: 0, right: 0, width: 36, flexDirection: 'row' },
+    fadeSlice: { flex: 1, backgroundColor: c.card },
 
-  legendRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' },
-  legendItem:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  legendBar:     { width: 8, height: 12, borderRadius: 2 },
-  legendDivider: { width: 1, height: 12, backgroundColor: COLORS.border },
-  legendDot:     { width: 6, height: 6, borderRadius: 3 },
-  legendText:    { color: COLORS.textMuted, fontSize: 10 },
-});
+    legendRow:     { flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' },
+    legendItem:    { flexDirection: 'row', alignItems: 'center', gap: 4 },
+    legendBar:     { width: 8, height: 12, borderRadius: 2 },
+    legendDivider: { width: 1, height: 12, backgroundColor: c.border },
+    legendDot:     { width: 6, height: 6, borderRadius: 3 },
+    legendText:    { color: c.textMuted, fontSize: 10 },
+  });
+}

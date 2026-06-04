@@ -1,6 +1,8 @@
 import React from 'react';
 import { Image, Pressable, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
+import { useTheme } from '@/context/ThemeContext';
+import type { AppColors } from '@/constants/themes';
 import type { WatchlistItem } from '@/hooks/useWatchlist';
 
 const LEVEL_EMOJI: Record<string, string> = {
@@ -31,6 +33,8 @@ interface Props {
 }
 
 export default function WatchlistCard({ item, onPress, onRemove, onRenew }: Props) {
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
   const expiringSoon = isExpiringSoon(item.expiresAt);
 
   return (
@@ -72,21 +76,23 @@ export default function WatchlistCard({ item, onPress, onRemove, onRenew }: Prop
   );
 }
 
-const styles = StyleSheet.create({
-  card:              { backgroundColor: COLORS.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.border },
-  cardPressed:       { opacity: 0.75, transform: [{ scale: 0.98 }] },
-  image:             { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.surface },
-  imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
-  imageFallbackText: { fontSize: 20, color: COLORS.primary, fontWeight: '700' },
-  info:              { flex: 1, gap: 3 },
-  name:              { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  alertRow:          { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  alertEmoji:        { fontSize: 13 },
-  alertText:         { color: COLORS.textSec, fontSize: 12 },
-  expiry:            { color: COLORS.textMuted, fontSize: 12 },
-  expirySoon:        { color: COLORS.moderate },
-  actions:           { alignItems: 'center', gap: 8 },
-  renewBtn:          { backgroundColor: COLORS.primary + '20', borderRadius: 14, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: COLORS.primary + '50' },
-  renewText:         { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
-  removeText:        { color: COLORS.textMuted, fontSize: 18, fontWeight: '600' },
-});
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    card:              { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
+    cardPressed:       { opacity: 0.75, transform: [{ scale: 0.98 }] },
+    image:             { width: 48, height: 48, borderRadius: 12, backgroundColor: c.surface },
+    imageFallback:     { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
+    imageFallbackText: { fontSize: 20, color: COLORS.primary, fontWeight: '700' },
+    info:              { flex: 1, gap: 3 },
+    name:              { color: c.text, fontSize: 16, fontWeight: '600' },
+    alertRow:          { flexDirection: 'row', alignItems: 'center', gap: 5 },
+    alertEmoji:        { fontSize: 13 },
+    alertText:         { color: c.textSec, fontSize: 12 },
+    expiry:            { color: c.textMuted, fontSize: 12 },
+    expirySoon:        { color: COLORS.moderate },
+    actions:           { alignItems: 'center', gap: 8 },
+    renewBtn:          { backgroundColor: COLORS.primary + '20', borderRadius: 14, paddingHorizontal: 8, paddingVertical: 4, borderWidth: 1, borderColor: COLORS.primary + '50' },
+    renewText:         { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
+    removeText:        { color: c.textMuted, fontSize: 18, fontWeight: '600' },
+  });
+}

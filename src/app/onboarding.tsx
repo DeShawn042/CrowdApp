@@ -15,7 +15,6 @@ import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context'
 import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
-import { requestNotificationPermission } from '@/hooks/useNotifications';
 import * as Location from 'expo-location';
 
 // ── Section data ─────────────────────────────────────────────────────────────
@@ -145,8 +144,13 @@ export default function OnboardingScreen() {
   }
 
   async function requestNotifications() {
-    const granted = await requestNotificationPermission();
-    setNotifGranted(granted);
+    try {
+      const { Notifications } = await import('expo-notifications');
+      const { status } = await Notifications.requestPermissionsAsync();
+      setNotifGranted(status === 'granted');
+    } catch {
+      setNotifGranted(false);
+    }
   }
 
   return (

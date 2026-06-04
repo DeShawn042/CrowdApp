@@ -86,9 +86,9 @@ export default function SearchScreen() {
   }, [query, userLocation?.lat, userLocation?.lng]);
 
   const handleCategoryPress = useCallback(async (cat: PlaceCategory) => {
-    if (!userLocation) return;
     setSelectedCategory(cat);
     setCategoryResults([]);
+    if (!userLocation) return; // stays in category mode, shows empty state with message
     setCategorySearching(true);
     const results = await searchNearby(userLocation.lat, userLocation.lng, cat.radiusMeters ?? 3000, cat.types);
     setCategoryResults(results);

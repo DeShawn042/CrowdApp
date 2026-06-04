@@ -31,6 +31,8 @@ import { useQuickReports } from '@/hooks/useQuickReports';
 import { useHeadingThere } from '@/hooks/useHeadingThere';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { getQuickReportConfigs } from '@/utils/quickReportConfig';
+import type { QuickReportConfig, ReportType } from '@/utils/quickReportConfig';
+import QuickReportSheet from '@/components/QuickReportSheet';
 import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
 import type { Location, Review } from '@/data/mockData';
@@ -97,8 +99,10 @@ export default function LocationDetailScreen() {
   const [respondTarget,   setRespondTarget]   = useState<Review | null>(null);
   const [mapOptions,      setMapOptions]      = useState<MapOption[]>([]);
   const [showMapChooser,  setShowMapChooser]  = useState(false);
+  const [activeQR,        setActiveQR]        = useState<{ type: ReportType; config: QuickReportConfig } | null>(null);
 
   const currentHour = new Date().getHours();
+  const qrConfigs = location ? getQuickReportConfigs(location.type) : null;
 
   // ── Early returns (after all hooks) ─────────────────────────
   if (fetchLoading) {
@@ -333,33 +337,24 @@ export default function LocationDetailScreen() {
         </Pressable>
 
         {/* Quick Reports — hidden for categories with no applicable report types */}
-        {(() => {
-          const qrConfigs = getQuickReportConfigs(location.type);
-          if (!qrConfigs) return null;
-          return (
-            <QuickReportsSection
-              configs={qrConfigs}
-              aggregated={quickReports.aggregated}
-              myLast={quickReports.myLast}
-              cooldownFor={quickReports.cooldownFor}
-              onSubmit={quickReports.submit}
-            />
-          );
-        })()}
+        {qrConfigs != null && (
+          <QuickReportsSection
+            configs={qrConfigs}
+            aggregated={quickReports.aggregated}
+            myLast={quickReports.myLast}
+            cooldownFor={quickReports.cooldownFor}
+            onSelectType={cfg => setActiveQR({ type: cfg.type, config: cfg })}
+          />
+        )}
 
         {/* Quick Report summaries — above busy times, only renders if data exists */}
-        {(() => {
-          const qrConfigs = getQuickReportConfigs(location.type);
-          if (!qrConfigs) return null;
-          const activeTypes = new Set(qrConfigs.map(c => c.type));
-          return (
-            <QuickReportSummaries
-              reports={quickReports.reports}
-              priceReports={quickReports.priceReports}
-              activeTypes={activeTypes}
-            />
-          );
-        })()}
+        {qrConfigs != null && (
+          <QuickReportSummaries
+            reports={quickReports.reports}
+            priceReports={quickReports.priceReports}
+            activeTypes={new Set(qrConfigs.map(c => c.type))}
+          />
+        )}
 
         {/* Busy times chart */}
         <BusyTimesChart
@@ -518,6 +513,13 @@ export default function LocationDetailScreen() {
         visible={showMapChooser}
         options={mapOptions}
         onClose={() => setShowMapChooser(false)}
+      />
+      <QuickReportSheet
+        visible={!!activeQR}
+        config={activeQR?.config ?? null}
+        myCurrentValue={activeQR ? quickReports.myLast[activeQR.type] : null}
+        onClose={() => setActiveQR(null)}
+        onSubmit={async (value) => { if (activeQR) await quickReports.submit(activeQR.type, value); }}
       />
       <ReviewForm
         visible={showReviewForm}

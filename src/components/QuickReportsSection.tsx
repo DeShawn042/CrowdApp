@@ -1,17 +1,18 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { COLORS } from '@/constants/crowdColors';
-import QuickReportSheet from '@/components/QuickReportSheet';
+import { useTheme } from '@/context/ThemeContext';
+import type { AppColors } from '@/constants/themes';
 import { REPORT_TYPE_ICONS } from '@/utils/quickReportConfig';
 import type { AggregatedReport, ReportType } from '@/hooks/useQuickReports';
 import type { QuickReportConfig } from '@/utils/quickReportConfig';
 
 interface Props {
-  configs: QuickReportConfig[];           // ordered list for this location type
+  configs: QuickReportConfig[];
   aggregated: AggregatedReport[];
   myLast: Record<ReportType, string | null>;
   cooldownFor: (type: ReportType) => number;
-  onSubmit: (type: ReportType, value: string) => Promise<boolean>;
+  onSelectType: (cfg: QuickReportConfig) => void;
 }
 
 export default function QuickReportsSection({
@@ -19,20 +20,11 @@ export default function QuickReportsSection({
   aggregated,
   myLast,
   cooldownFor,
-  onSubmit,
+  onSelectType,
 }: Props) {
-  const [activeType, setActiveType] = useState<ReportType | null>(null);
+  const { colors } = useTheme();
+  const styles = makeStyles(colors);
 
-  // Multiple configs can share the same type (e.g. two vibe variants).
-  // Find the config whose type matches the active tap.
-  const activeConfig = configs.find(c => c.type === activeType) ?? null;
-
-  async function handleSubmit(value: string) {
-    if (!activeType) return;
-    await onSubmit(activeType, value);
-  }
-
-  // Only show pills for report types present in this location's config set
   const configTypes = new Set(configs.map(c => c.type));
   const visiblePills = aggregated.filter(r => configTypes.has(r.reportType));
 
@@ -40,7 +32,6 @@ export default function QuickReportsSection({
     <View style={styles.container}>
       <Text style={styles.sectionTitle}>Quick Reports</Text>
 
-      {/* Report type buttons — one per config entry */}
       <View style={styles.buttonRow}>
         {configs.map(cfg => {
           const onCooldown = cooldownFor(cfg.type) > 0;
@@ -54,7 +45,7 @@ export default function QuickReportsSection({
                 onCooldown && styles.typeBtnCooldown,
                 pressed && styles.typeBtnPressed,
               ]}
-              onPress={() => setActiveType(cfg.type)}>
+              onPress={() => onSelectType(cfg)}>
               <Text style={styles.typeBtnIcon}>{cfg.icon}</Text>
               <Text style={[styles.typeBtnLabel, hasReport && styles.typeBtnLabelActive]}>
                 {cfg.label}
@@ -65,7 +56,6 @@ export default function QuickReportsSection({
         })}
       </View>
 
-      {/* Active report pills */}
       {visiblePills.length > 0 && (
         <ScrollView
           horizontal
@@ -81,32 +71,26 @@ export default function QuickReportsSection({
           ))}
         </ScrollView>
       )}
-
-      <QuickReportSheet
-        visible={!!activeType}
-        config={activeConfig}
-        myCurrentValue={activeType ? myLast[activeType] : null}
-        onClose={() => setActiveType(null)}
-        onSubmit={handleSubmit}
-      />
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container:          { gap: 14 },
-  sectionTitle:       { color: COLORS.text, fontSize: 18, fontWeight: '700' },
-  buttonRow:          { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
-  typeBtn:            { alignItems: 'center', gap: 6, backgroundColor: COLORS.card, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: COLORS.border, minWidth: 72 },
-  typeBtnActive:      { borderColor: COLORS.primary + '80', backgroundColor: COLORS.primary + '12' },
-  typeBtnCooldown:    { opacity: 0.6 },
-  typeBtnPressed:     { opacity: 0.75, transform: [{ scale: 0.97 }] },
-  typeBtnIcon:        { fontSize: 20 },
-  typeBtnLabel:       { color: COLORS.textSec, fontSize: 11, fontWeight: '600', textAlign: 'center' },
-  typeBtnLabelActive: { color: COLORS.primary },
-  activeDot:          { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.primary, position: 'absolute', top: 8, right: 8 },
-  pillsRow:           { gap: 8, paddingVertical: 2 },
-  pill:               { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: COLORS.surface, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: COLORS.border },
-  pillIcon:           { fontSize: 13 },
-  pillText:           { color: COLORS.textSec, fontSize: 13, fontWeight: '500' },
-});
+function makeStyles(c: AppColors) {
+  return StyleSheet.create({
+    container:          { gap: 14 },
+    sectionTitle:       { color: c.text, fontSize: 18, fontWeight: '700' },
+    buttonRow:          { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    typeBtn:            { alignItems: 'center', gap: 6, backgroundColor: c.card, borderRadius: 16, paddingVertical: 14, paddingHorizontal: 12, borderWidth: 1, borderColor: c.border, minWidth: 72 },
+    typeBtnActive:      { borderColor: COLORS.primary + '80', backgroundColor: COLORS.primary + '12' },
+    typeBtnCooldown:    { opacity: 0.6 },
+    typeBtnPressed:     { opacity: 0.75, transform: [{ scale: 0.97 }] },
+    typeBtnIcon:        { fontSize: 20 },
+    typeBtnLabel:       { color: c.text, fontSize: 11, fontWeight: '600', textAlign: 'center' },
+    typeBtnLabelActive: { color: COLORS.primary },
+    activeDot:          { width: 6, height: 6, borderRadius: 3, backgroundColor: COLORS.primary, position: 'absolute', top: 8, right: 8 },
+    pillsRow:           { gap: 8, paddingVertical: 2 },
+    pill:               { flexDirection: 'row', alignItems: 'center', gap: 5, backgroundColor: c.surface, borderRadius: 20, paddingHorizontal: 12, paddingVertical: 7, borderWidth: 1, borderColor: c.border },
+    pillIcon:           { fontSize: 13 },
+    pillText:           { color: c.textSec, fontSize: 13, fontWeight: '500' },
+  });
+}

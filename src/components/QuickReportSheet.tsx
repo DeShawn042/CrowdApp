@@ -43,63 +43,66 @@ export default function QuickReportSheet({
     onClose();
   }
 
-  if (!config) return null;
-
   return (
     <Modal
       visible={visible}
       transparent
       animationType="slide"
       onRequestClose={handleClose}
-      statusBarTranslucent>
+      statusBarTranslucent
+      hardwareAccelerated>
       <Pressable style={styles.backdrop} onPress={handleClose}>
         <Pressable style={[styles.sheet, { backgroundColor: colors.card }]}>
-          <View style={styles.handle} />
-
-          <View style={styles.titleRow}>
-            <Text style={styles.titleIcon}>{config.icon}</Text>
-            <Text style={styles.title}>{config.label}</Text>
-          </View>
-
-          {submitted ? (
-            <View style={styles.statusBox}>
-              <Text style={styles.successText}>✓  Thanks for reporting!</Text>
-            </View>
-          ) : submitting ? (
-            <View style={styles.statusBox}>
-              <ActivityIndicator color={COLORS.primary} />
-            </View>
-          ) : (
+          {config && (
             <>
-              {myCurrentValue && (
-                <Text style={styles.currentHint}>
-                  Your current report:{' '}
-                  <Text style={styles.currentVal}>{myCurrentValue}</Text>
-                </Text>
+              <View style={styles.handle} />
+
+              <View style={styles.titleRow}>
+                <Text style={styles.titleIcon}>{config.icon}</Text>
+                <Text style={styles.title}>{config.label}</Text>
+              </View>
+
+              {submitted ? (
+                <View style={styles.statusBox}>
+                  <Text style={styles.successText}>✓  Thanks for reporting!</Text>
+                </View>
+              ) : submitting ? (
+                <View style={styles.statusBox}>
+                  <ActivityIndicator color={COLORS.primary} />
+                </View>
+              ) : (
+                <>
+                  {myCurrentValue && (
+                    <Text style={styles.currentHint}>
+                      Your current report:{' '}
+                      <Text style={styles.currentVal}>{myCurrentValue}</Text>
+                    </Text>
+                  )}
+                  {config.options.map(opt => (
+                    <Pressable
+                      key={opt}
+                      style={({ pressed }) => [
+                        styles.option,
+                        myCurrentValue === opt && styles.optionSelected,
+                        pressed && styles.optionPressed,
+                      ]}
+                      onPress={() => handlePick(opt)}>
+                      <Text style={[styles.optionText, myCurrentValue === opt && styles.optionTextSelected]}>
+                        {opt}
+                      </Text>
+                      {myCurrentValue === opt && <Text style={styles.checkmark}>✓</Text>}
+                    </Pressable>
+                  ))}
+                </>
               )}
-              {config.options.map(opt => (
-                <Pressable
-                  key={opt}
-                  style={({ pressed }) => [
-                    styles.option,
-                    myCurrentValue === opt && styles.optionSelected,
-                    pressed && styles.optionPressed,
-                  ]}
-                  onPress={() => handlePick(opt)}>
-                  <Text style={[styles.optionText, myCurrentValue === opt && styles.optionTextSelected]}>
-                    {opt}
-                  </Text>
-                  {myCurrentValue === opt && <Text style={styles.checkmark}>✓</Text>}
-                </Pressable>
-              ))}
+
+              <Pressable
+                style={({ pressed }) => [styles.cancel, pressed && { opacity: 0.6 }]}
+                onPress={handleClose}>
+                <Text style={styles.cancelText}>Cancel</Text>
+              </Pressable>
             </>
           )}
-
-          <Pressable
-            style={({ pressed }) => [styles.cancel, pressed && { opacity: 0.6 }]}
-            onPress={handleClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
-          </Pressable>
         </Pressable>
       </Pressable>
     </Modal>
