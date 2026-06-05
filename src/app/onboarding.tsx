@@ -131,7 +131,7 @@ export default function OnboardingScreen() {
   const finish = useCallback(async (goToSignup = true) => {
     await markSeen();
     if (goToSignup) {
-      router.replace('/(auth)/login');
+      router.replace('/(auth)/signup');
     } else {
       router.replace('/(auth)/login');
     }
@@ -228,7 +228,7 @@ export default function OnboardingScreen() {
           onPress={() => finish()}>
           <Text style={styles.ctaBtnText}>Get Started</Text>
         </Pressable>
-        <Pressable onPress={() => finish()}>
+        <Pressable onPress={() => finish(false)}>
           <Text style={[styles.signInText, { color: colors.textMuted }]}>
             Already have an account?{' '}
             <Text style={{ color: COLORS.primary, fontWeight: '700' }}>Sign in</Text>

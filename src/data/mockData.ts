@@ -7,14 +7,15 @@ export type LocationType =
 export interface Review {
   id: string;
   locationId: string;
-  userId: string;
-  userName: string;
+  userId: string | null;       // null after account deletion
+  userName: string;            // legacy — kept for backwards compat
+  displayName: string | null;  // preferred: snapshotted at write time
   rating: number;
   content: string;
   createdAt: string;
   updatedAt: string;
   photos: string[];
-  ownerResponse?: string; // owner reply, if any
+  ownerResponse?: string;
 }
 
 export interface GoogleReview {

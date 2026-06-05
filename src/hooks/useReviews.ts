@@ -24,8 +24,9 @@ function mapRow(r: any): Review {
   return {
     id: r.id,
     locationId: r.location_id,
-    userId: r.user_id,
-    userName: r.user_name,
+    userId: r.user_id ?? null,
+    userName: r.user_name ?? '',
+    displayName: r.display_name ?? null,
     rating: r.rating,
     content: r.content,
     createdAt: r.created_at,
@@ -58,7 +59,7 @@ export function useReviews(locationId: string) {
 
     const { data, error: err } = await supabase
       .from('reviews')
-      .select('id, location_id, user_id, user_name, rating, content, created_at, updated_at, review_photos(storage_url), review_responses(content)')
+      .select('id, location_id, user_id, user_name, display_name, rating, content, created_at, updated_at, review_photos(storage_url), review_responses(content)')
       .eq('location_id', locationId)
       .order('created_at', { ascending: false });
 
@@ -107,7 +108,14 @@ export function useReviews(locationId: string) {
       } else {
         const { data, error: err } = await supabase
           .from('reviews')
-          .insert({ location_id: locationId, user_id: currentUserId, user_name: currentUserName, rating, content })
+          .insert({
+            location_id:  locationId,
+            user_id:      currentUserId,
+            user_name:    currentUserName,
+            display_name: currentUserName ?? null,
+            rating,
+            content,
+          })
           .select('id')
           .single();
         if (err) throw err;

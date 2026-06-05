@@ -21,6 +21,7 @@ import { checkToxicity } from '@/utils/perspectiveApi';
 import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_EMOJIS, CROWD_LABELS } from '@/utils/crowdUtils';
 import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
+import { useRateApp } from '@/hooks/useRateApp';
 
 const CROWD_OPTIONS: { level: CrowdLevel; description: string }[] = [
   { level: 'empty',    description: 'Basically no one here' },
@@ -36,6 +37,7 @@ export default function SubmitReportScreen() {
 
   const { colors } = useTheme();
   const styles = makeStyles(colors);
+  const { onReportSubmitted } = useRateApp();
   const { canReport, cooldownSeconds, lastReportLevel, loading: limitLoading } =
     useReportLimit(id ?? '');
 
@@ -65,6 +67,7 @@ export default function SubmitReportScreen() {
     setLoading(true);
     setProfanityError(null);
     await submitReport(id, selected!, comment.trim() || undefined);
+    await onReportSubmitted();
     setLoading(false);
     router.back();
   }

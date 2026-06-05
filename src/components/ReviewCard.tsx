@@ -13,12 +13,16 @@ interface Props {
 
 export default function ReviewCard({ review, isOwn = false }: Props) {
   const { colors } = useTheme();
-  const initials = review.userName
+
+  // Priority: displayName → userName → 'Prescout User'
+  const name = review.displayName ?? (review.userName || null) ?? 'Prescout User';
+
+  const initials = name
     .split(' ')
     .map(n => n[0])
     .join('')
     .slice(0, 2)
-    .toUpperCase();
+    .toUpperCase() || 'P';
 
   return (
     <View style={[styles.card, { borderBottomColor: colors.border }]}>
@@ -28,7 +32,7 @@ export default function ReviewCard({ review, isOwn = false }: Props) {
         </View>
         <View style={styles.headerInfo}>
           <Text style={[styles.name, { color: colors.text }]}>
-            {review.userName}{isOwn ? ' (you)' : ''}
+            {name}{isOwn ? ' (you)' : ''}
           </Text>
           <StarRating rating={review.rating} size={13} />
         </View>

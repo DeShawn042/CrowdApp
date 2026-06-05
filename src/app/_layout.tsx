@@ -1,7 +1,7 @@
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { View } from 'react-native';
-import { AuthProvider } from '@/context/AuthContext';
+import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AppProvider } from '@/context/AppContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
@@ -9,11 +9,21 @@ import { useOnboarding } from '@/hooks/useOnboarding';
 function ThemedStack() {
   const { colors } = useTheme();
   const { checked, hasSeenIt } = useOnboarding();
+  const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Don't render anything until AsyncStorage check is done
-  if (!checked) {
+  // Wait for both AsyncStorage and auth session to resolve
+  if (!checked || authLoading) {
     return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
   }
+
+  // Priority 1: logged in → home (no onboarding, no login)
+  // Priority 2: logged out + seen onboarding → login
+  // Priority 3: logged out + not seen onboarding → onboarding
+  const redirect = isAuthenticated
+    ? <Redirect href="/(tabs)/" />
+    : !hasSeenIt
+      ? <Redirect href="/onboarding" />
+      : <Redirect href="/(auth)/login" />;
 
   return (
     <>
@@ -39,8 +49,7 @@ function ThemedStack() {
           options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_bottom' }}
         />
       </Stack>
-      {/* Redirect to onboarding if first launch */}
-      {!hasSeenIt && <Redirect href="/onboarding" />}
+      {redirect}
     </>
   );
 }

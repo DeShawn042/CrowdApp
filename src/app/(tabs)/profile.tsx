@@ -1,8 +1,11 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback } from 'react';
-import { Alert, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useCallback, useState } from 'react';
+import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+// Platform still used for device info in openContactSupport
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Constants from 'expo-constants';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
+import ConfirmModal from '@/components/ConfirmModal';
 import WatchlistCard from '@/components/WatchlistCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
@@ -13,12 +16,19 @@ import { useAuth } from '@/context/AuthContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { formatDate, timeAgo } from '@/utils/crowdUtils';
 
+const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
+const SUPPORT_EMAIL = 'support@rookstechnologies.com';
+const TERMS_URL = 'https://rookstechnologies.com/terms';
+const PRIVACY_URL = 'https://rookstechnologies.com/privacy';
+
 export default function ProfileScreen() {
   const { colors, preference, setPreference } = useTheme();
   const styles = makeStyles(colors);
-  const { user, logout } = useAuth();
+  const { user, logout, deleteAccount } = useAuth();
   const { myReports, getLocationById } = useAppContext();
   const { items: watchlistItems, removeFromWatchlist, renewWatchlistItem, reload: reloadWatchlist } = useWatchlist();
+
+  const [modal, setModal] = useState<'logout' | 'delete' | null>(null);
 
   useFocusEffect(useCallback(() => { reloadWatchlist(); }, [reloadWatchlist]));
 
@@ -29,25 +39,21 @@ export default function ProfileScreen() {
     .toUpperCase()
     .slice(0, 2);
 
-  function confirmLogout() {
-    if (Platform.OS === 'web') {
-      // Alert.alert is a no-op on web — confirm natively instead
-      if (window.confirm('Are you sure you want to log out?')) logout();
-      return;
-    }
-    Alert.alert('Log out', 'Are you sure you want to log out?', [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Log out', style: 'destructive', onPress: logout },
-    ]);
+  function openContactSupport() {
+    const deviceInfo = `${Platform.OS} ${Platform.Version}`;
+    const body = `App Version: Prescout v${APP_VERSION}\nDevice: ${deviceInfo}\n\nDescribe your issue here:`;
+    const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Prescout Support Request')}&body=${encodeURIComponent(body)}`;
+    Linking.openURL(url);
   }
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Profile</Text>
-          <Pressable onPress={confirmLogout} style={styles.logoutBtn}>
+          <Pressable onPress={() => setModal('logout')} style={styles.logoutBtn}>
             <Text style={styles.logoutText}>Log out</Text>
           </Pressable>
         </View>
@@ -91,7 +97,7 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Theme */}
+        {/* Appearance */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Appearance</Text>
           <View style={styles.themeRow}>
@@ -132,7 +138,7 @@ export default function ProfileScreen() {
           {myReports.length === 0 ? (
             <View style={styles.emptyReports}>
               <Text style={styles.emptyEmoji}>📝</Text>
-              <Text style={[styles.emptyText, { color: COLORS.textSec, fontWeight: '600', fontSize: 16 }]}>No reports yet</Text>
+              <Text style={[styles.emptyText, { color: colors.textSec, fontWeight: '600', fontSize: 16 }]}>No reports yet</Text>
               <Text style={styles.emptyText}>Start reporting crowd levels at nearby places!</Text>
             </View>
           ) : (
@@ -161,15 +167,84 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* Support & Legal */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Support & Legal</Text>
+          <View style={styles.linkList}>
+            <Pressable
+              style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.7 }]}
+              onPress={openContactSupport}>
+              <Text style={styles.linkIcon}>✉️</Text>
+              <Text style={styles.linkText}>Contact Support</Text>
+              <Text style={styles.linkChevron}>›</Text>
+            </Pressable>
+            <View style={styles.linkDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.7 }]}
+              onPress={() => Linking.openURL(TERMS_URL)}>
+              <Text style={styles.linkIcon}>📄</Text>
+              <Text style={styles.linkText}>Terms of Service</Text>
+              <Text style={styles.linkChevron}>›</Text>
+            </Pressable>
+            <View style={styles.linkDivider} />
+            <Pressable
+              style={({ pressed }) => [styles.linkRow, pressed && { opacity: 0.7 }]}
+              onPress={() => Linking.openURL(PRIVACY_URL)}>
+              <Text style={styles.linkIcon}>🔒</Text>
+              <Text style={styles.linkText}>Privacy Policy</Text>
+              <Text style={styles.linkChevron}>›</Text>
+            </Pressable>
+          </View>
+        </View>
+
+        {/* Delete Account */}
+        <Pressable
+          style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.7 }]}
+          onPress={() => setModal('delete')}>
+          <Text style={styles.deleteBtnText}>Delete Account</Text>
+        </Pressable>
+
         {/* Version — long press to open admin if is_admin */}
         <Pressable
           onLongPress={() => { if (user?.isAdmin) router.push('/admin'); }}
           delayLongPress={800}
-          style={{ alignItems: 'center', paddingVertical: 8 }}>
-          <Text style={{ color: colors.textMuted, fontSize: 12 }}>Prescout v1.0.0</Text>
+          style={styles.versionRow}>
+          <Text style={styles.versionText}>Prescout v{APP_VERSION}</Text>
         </Pressable>
 
       </ScrollView>
+
+      {/* Logout confirmation */}
+      <ConfirmModal
+        visible={modal === 'logout'}
+        title="Log out"
+        message="Are you sure you want to log out?"
+        onClose={() => setModal(null)}
+        actions={[
+          { label: 'Log out', destructive: true, onPress: logout },
+          { label: 'Cancel', cancel: true, onPress: () => {} },
+        ]}
+      />
+
+      {/* Delete account confirmation */}
+      <ConfirmModal
+        visible={modal === 'delete'}
+        title="Delete Account"
+        message="Are you sure? This will permanently delete your account and all your data including reports, reviews, and favorites. This cannot be undone."
+        onClose={() => setModal(null)}
+        actions={[
+          {
+            label: 'Delete Account',
+            destructive: true,
+            onPress: async () => {
+              await deleteAccount();
+              router.replace('/onboarding');
+            },
+          },
+          { label: 'Cancel', cancel: true, onPress: () => {} },
+        ]}
+      />
     </SafeAreaView>
   );
 }
@@ -182,48 +257,57 @@ const THEME_OPTIONS: { key: ThemePreference; icon: string; label: string }[] = [
 
 function makeStyles(c: AppColors) {
   return StyleSheet.create({
-    safe:           { flex: 1, backgroundColor: c.bg },
-    scroll:         { flex: 1 },
-    content:        { padding: 20, gap: 20, paddingBottom: 80 },
-    header:         { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    title:          { color: c.text, fontSize: 24, fontWeight: '700' },
-    logoutBtn:      { backgroundColor: c.card, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: c.border },
-    logoutText:     { color: COLORS.packed, fontSize: 12, fontWeight: '600' },
-    userCard:       { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', gap: 16, alignItems: 'center', borderWidth: 1, borderColor: c.border },
-    avatar:         { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.primary + '60' },
-    avatarText:     { color: COLORS.primary, fontSize: 22, fontWeight: '800' },
-    userInfo:       { flex: 1, gap: 3 },
-    userName:       { color: c.text, fontSize: 16, fontWeight: '600' },
-    userEmail:      { color: c.textSec, fontSize: 12 },
-    joinDate:       { color: c.textMuted, fontSize: 12, marginTop: 4 },
-    statsRow:       { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-around', borderWidth: 1, borderColor: c.border },
-    stat:           { alignItems: 'center', gap: 6 },
-    statNum:        { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
-    statLabel:      { color: c.textSec, fontSize: 12, textAlign: 'center', lineHeight: 16 },
-    statDivider:    { width: 1, backgroundColor: c.border },
-    section:        { gap: 14 },
-    sectionTitle:   { color: c.text, fontSize: 18, fontWeight: '700' },
-    favCard:        { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
-    favEmoji:       { fontSize: 28 },
-    favName:        { color: c.text, fontSize: 16, fontWeight: '600' },
-    emptyReports:   { alignItems: 'center', paddingVertical: 40, gap: 8 },
-    emptyEmoji:     { fontSize: 40 },
-    emptyText:      { color: c.textMuted, fontSize: 14, textAlign: 'center' },
-    reportList:     { gap: 10 },
-    reportCard:     { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 8, borderWidth: 1, borderColor: c.border },
-    pressed:        { opacity: 0.75 },
-    reportTop:      { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    reportLocation: { color: c.text, fontSize: 16, fontWeight: '600', flex: 1 },
-    reportTime:     { color: c.textMuted, fontSize: 12 },
-    reportComment:  { color: c.textSec, fontSize: 14, fontStyle: 'italic' },
-    reportDate:     { color: c.textMuted, fontSize: 12 },
-    // Theme selector
-    themeRow:       { flexDirection: 'row', gap: 10 },
-    themeBtn:       { flex: 1, alignItems: 'center', gap: 6, backgroundColor: c.card, borderRadius: 16, paddingVertical: 14, borderWidth: 1, borderColor: c.border },
-    themeBtnActive: { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
-    themeIcon:      { fontSize: 20 },
-    themeLabel:     { color: c.textSec, fontSize: 12, fontWeight: '600' },
-    themeLabelActive:{ color: COLORS.primary },
-    themeCheck:     { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
+    safe:             { flex: 1, backgroundColor: c.bg },
+    scroll:           { flex: 1 },
+    content:          { padding: 20, gap: 20, paddingBottom: 80 },
+    header:           { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    title:            { color: c.text, fontSize: 24, fontWeight: '700' },
+    logoutBtn:        { backgroundColor: c.card, paddingHorizontal: 14, paddingVertical: 8, borderRadius: 14, borderWidth: 1, borderColor: c.border },
+    logoutText:       { color: COLORS.packed, fontSize: 12, fontWeight: '600' },
+    userCard:         { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', gap: 16, alignItems: 'center', borderWidth: 1, borderColor: c.border },
+    avatar:           { width: 64, height: 64, borderRadius: 32, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: COLORS.primary + '60' },
+    avatarText:       { color: COLORS.primary, fontSize: 22, fontWeight: '800' },
+    userInfo:         { flex: 1, gap: 3 },
+    userName:         { color: c.text, fontSize: 16, fontWeight: '600' },
+    userEmail:        { color: c.textSec, fontSize: 12 },
+    joinDate:         { color: c.textMuted, fontSize: 12, marginTop: 4 },
+    statsRow:         { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-around', borderWidth: 1, borderColor: c.border },
+    stat:             { alignItems: 'center', gap: 6 },
+    statNum:          { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
+    statLabel:        { color: c.textSec, fontSize: 12, textAlign: 'center', lineHeight: 16 },
+    statDivider:      { width: 1, backgroundColor: c.border },
+    section:          { gap: 14 },
+    sectionTitle:     { color: c.text, fontSize: 18, fontWeight: '700' },
+    favCard:          { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
+    favEmoji:         { fontSize: 28 },
+    favName:          { color: c.text, fontSize: 16, fontWeight: '600' },
+    emptyReports:     { alignItems: 'center', paddingVertical: 40, gap: 8 },
+    emptyEmoji:       { fontSize: 40 },
+    emptyText:        { color: c.textMuted, fontSize: 14, textAlign: 'center' },
+    reportList:       { gap: 10 },
+    reportCard:       { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 8, borderWidth: 1, borderColor: c.border },
+    pressed:          { opacity: 0.75 },
+    reportTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    reportLocation:   { color: c.text, fontSize: 16, fontWeight: '600', flex: 1 },
+    reportTime:       { color: c.textMuted, fontSize: 12 },
+    reportComment:    { color: c.textSec, fontSize: 14, fontStyle: 'italic' },
+    reportDate:       { color: c.textMuted, fontSize: 12 },
+    themeRow:         { flexDirection: 'row', gap: 10 },
+    themeBtn:         { flex: 1, alignItems: 'center', gap: 6, backgroundColor: c.card, borderRadius: 16, paddingVertical: 14, borderWidth: 1, borderColor: c.border },
+    themeBtnActive:   { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
+    themeIcon:        { fontSize: 20 },
+    themeLabel:       { color: c.textSec, fontSize: 12, fontWeight: '600' },
+    themeLabelActive: { color: COLORS.primary },
+    themeCheck:       { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
+    linkList:         { backgroundColor: c.card, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
+    linkRow:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+    linkIcon:         { fontSize: 18 },
+    linkText:         { flex: 1, color: c.text, fontSize: 15, fontWeight: '500' },
+    linkChevron:      { color: c.textMuted, fontSize: 20 },
+    linkDivider:      { height: 1, backgroundColor: c.border, marginLeft: 48 },
+    deleteBtn:        { borderRadius: 16, paddingVertical: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.packed + '60', backgroundColor: COLORS.packed + '10' },
+    deleteBtnText:    { color: COLORS.packed, fontSize: 15, fontWeight: '600' },
+    versionRow:       { alignItems: 'center', paddingVertical: 8 },
+    versionText:      { color: c.textMuted, fontSize: 12 },
   });
 }

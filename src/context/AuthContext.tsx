@@ -1,14 +1,21 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { AppUser } from '@/data/mockData';
 import { isSupabaseConfigured, setCurrentUser, supabase } from '@/lib/supabase';
+
+const ONBOARDING_KEY = 'prescout_has_seen_onboarding';
+async function markOnboardingSeen() {
+  await AsyncStorage.setItem(ONBOARDING_KEY, 'true');
+}
 
 interface AuthContextValue {
   isAuthenticated: boolean;
   isLoading: boolean;
   user: AppUser | null;
-  login:  (email: string, password: string) => Promise<void>;
-  signup: (name: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
-  logout: () => Promise<void>;
+  login:         (email: string, password: string) => Promise<void>;
+  signup:        (name: string, email: string, password: string) => Promise<{ needsEmailConfirmation: boolean }>;
+  logout:        () => Promise<void>;
+  deleteAccount: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -84,10 +91,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const appUser: AppUser = { id: 'u1', name, email, joinDate: 'January 2025', totalReports: 0, weeklyReports: 0, favoriteVenue: '' };
       setUser(appUser);
       setCurrentUser('u1', name);
+      await markOnboardingSeen();
       return;
     }
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) throw new Error(error.message);
+    await markOnboardingSeen();
     // User state updated automatically via onAuthStateChange
   }, []);
 
@@ -96,6 +105,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const appUser: AppUser = { id: 'u1', name, email, joinDate: 'January 2025', totalReports: 0, weeklyReports: 0, favoriteVenue: '' };
       setUser(appUser);
       setCurrentUser('u1', name);
+      await markOnboardingSeen();
       return { needsEmailConfirmation: false };
     }
     const { data, error } = await supabase.auth.signUp({
@@ -104,6 +114,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       options: { data: { name } },
     });
     if (error) throw new Error(error.message);
+    await markOnboardingSeen();
     // session is null when Supabase requires email confirmation
     return { needsEmailConfirmation: !!data.user && !data.session };
   }, []);
@@ -114,8 +125,42 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     setCurrentUser(null, null);
   }, []);
 
+  const deleteAccount = useCallback(async () => {
+    if (!isSupabaseConfigured) {
+      setUser(null);
+      setCurrentUser(null, null);
+      await AsyncStorage.clear();
+      return;
+    }
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = session?.user?.id;
+    if (uid) {
+      // Anonymise reviews — preserve content but remove identity
+      await supabase
+        .from('reviews')
+        .update({ display_name: 'Deleted User', user_id: null })
+        .eq('user_id', uid);
+
+      // Delete all other user data across tables
+      const tables = [
+        'crowd_reports', 'user_favorites', 'business_claims',
+        'business_owner_info', 'review_responses', 'user_report_flags',
+        'location_reports', 'active_destinations', 'watchlist',
+      ];
+      await Promise.all(tables.map(t => supabase.from(t).delete().eq('user_id', uid)));
+
+      // Delete auth account via RPC (requires a SECURITY DEFINER function in your DB)
+      const { error: rpcError } = await supabase.rpc('delete_user_account');
+      if (rpcError) console.warn('delete_user_account RPC:', rpcError.message);
+    }
+    await supabase.auth.signOut();
+    setUser(null);
+    setCurrentUser(null, null);
+    await AsyncStorage.clear();
+  }, []);
+
   return (
-    <AuthContext.Provider value={{ isAuthenticated: !!user, isLoading, user, login, signup, logout }}>
+    <AuthContext.Provider value={{ isAuthenticated: !!user, isLoading, user, login, signup, logout, deleteAccount }}>
       {children}
     </AuthContext.Provider>
   );

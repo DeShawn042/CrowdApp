@@ -11,12 +11,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HeadingThereCard from '@/components/HeadingThereCard';
 import TrendingCard from '@/components/TrendingCard';
+import RateAppModal from '@/components/RateAppModal';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useGeofencing } from '@/hooks/useGeofencing';
 import { useHeadingThere } from '@/hooks/useHeadingThere';
 import { useWatchlist } from '@/hooks/useWatchlist';
+import { useRateApp } from '@/hooks/useRateApp';
 import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
 import { requestNotificationPermission, setupNotificationCategories, useNotificationResponse } from '@/hooks/useNotifications';
@@ -39,15 +41,21 @@ export default function HomeScreen() {
   const styles = makeStyles(colors);
   const { destination, clearDestination, reload: reloadDestination } = useHeadingThere();
   const { items: watchlistItems, reload: reloadWatchlist } = useWatchlist();
+  const { showPrompt, onReportSubmitted, dismiss, rated } = useRateApp();
 
   useFocusEffect(useCallback(() => {
     reloadDestination();
     reloadWatchlist();
   }, [reloadDestination, reloadWatchlist]));
+
   const isLive = trending.some(t => t.recentReports > 0);
 
   useGeofencing([...savedLocationIds, ...recentLocationIds.slice(0, 5)], locations);
-  useNotificationResponse((locationId, level) => { submitReport(locationId, level); });
+
+  useNotificationResponse(async (locationId, level) => {
+    await submitReport(locationId, level);
+    onReportSubmitted();
+  });
 
   useEffect(() => {
     async function setup() {
@@ -69,6 +77,9 @@ export default function HomeScreen() {
     addRecentLocation(id);
     router.push(`/location/${id}`);
   }
+
+  // New-user empty state: no favorites, no trending, not loading
+  const isNewUser = !trendingLoading && trending.length === 0 && favoriteLocations.length === 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -107,78 +118,103 @@ export default function HomeScreen() {
           </Pressable>
         )}
 
-        {/* Trending */}
-        <View style={styles.section}>
-          <View style={styles.sectionRow}>
-            <Text style={styles.sectionTitle}>🔥  Trending</Text>
-            <Text style={styles.sectionSub}>
-              {isLive ? 'Last hour' : 'Top reviewed'}
+        {/* New-user welcome empty state */}
+        {isNewUser ? (
+          <View style={styles.welcomeBox}>
+            <Text style={styles.welcomeEmoji}>👋</Text>
+            <Text style={styles.welcomeTitle}>Welcome to Prescout!</Text>
+            <Text style={styles.welcomeSub}>
+              Search for a place nearby to get started
             </Text>
-          </View>
-
-          {trendingLoading && trending.length === 0 ? (
-            <View style={styles.loadingRow}>
-              <ActivityIndicator color={COLORS.primary} size="small" />
-              <Text style={styles.loadingText}>Loading…</Text>
-            </View>
-          ) : trending.length === 0 ? (
-            <View style={styles.emptyBox}>
-              <Text style={{ fontSize: 40 }}>🔥</Text>
-              <Text style={[styles.emptyText, { color: COLORS.textSec, fontWeight: '600', fontSize: 16 }]}>No trending places yet</Text>
-              <Text style={styles.emptyText}>Search for nearby places to get started</Text>
-            </View>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.cardRow}>
-              {trending.map((loc, i) => (
-                <TrendingCard
-                  key={loc.id}
-                  location={loc}
-                  rank={i + 1}
-                  onPress={() => handleLocationPress(loc.id)}
-                />
-              ))}
-            </ScrollView>
-          )}
-        </View>
-
-        {/* Favorites */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>❤️  Favorites</Text>
-
-          {favoriteLocations.length === 0 ? (
             <Pressable
-              style={styles.emptyFavs}
+              style={({ pressed }) => [styles.exploreBtn, pressed && { opacity: 0.8 }]}
               onPress={() => router.push('/(tabs)/search')}>
-              <Text style={styles.emptyFavsIcon}>🔖</Text>
-              <Text style={styles.emptyFavsText}>
-                Save places you love to see them here
-              </Text>
-              <Text style={styles.emptyFavsHint}>
-                Tap ♡ on any location to save it
-              </Text>
+              <Text style={styles.exploreBtnText}>Start Exploring</Text>
             </Pressable>
-          ) : (
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.cardRow}>
-              {favoriteLocations.map(loc => (
-                <TrendingCard
-                  key={loc.id}
-                  location={loc}
-                  rank={0}
-                  showRank={false}
-                  onPress={() => handleLocationPress(loc.id)}
-                />
-              ))}
-            </ScrollView>
-          )}
-        </View>
+          </View>
+        ) : (
+          <>
+            {/* Trending */}
+            <View style={styles.section}>
+              <View style={styles.sectionRow}>
+                <Text style={styles.sectionTitle}>🔥  Trending</Text>
+                <Text style={styles.sectionSub}>
+                  {isLive ? 'Last hour' : 'Top reviewed'}
+                </Text>
+              </View>
+
+              {trendingLoading && trending.length === 0 ? (
+                <View style={styles.loadingRow}>
+                  <ActivityIndicator color={COLORS.primary} size="small" />
+                  <Text style={styles.loadingText}>Loading…</Text>
+                </View>
+              ) : trending.length === 0 ? (
+                <View style={styles.emptyBox}>
+                  <Text style={{ fontSize: 40 }}>🔥</Text>
+                  <Text style={[styles.emptyText, { color: colors.textSec, fontWeight: '600', fontSize: 16 }]}>No trending places yet</Text>
+                  <Text style={styles.emptyText}>Search for nearby places to get started</Text>
+                </View>
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.cardRow}>
+                  {trending.map((loc, i) => (
+                    <TrendingCard
+                      key={loc.id}
+                      location={loc}
+                      rank={i + 1}
+                      onPress={() => handleLocationPress(loc.id)}
+                    />
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+
+            {/* Favorites */}
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>❤️  Favorites</Text>
+
+              {favoriteLocations.length === 0 ? (
+                <Pressable
+                  style={styles.emptyFavs}
+                  onPress={() => router.push('/(tabs)/search')}>
+                  <Text style={styles.emptyFavsIcon}>🔖</Text>
+                  <Text style={styles.emptyFavsText}>
+                    Save places you love to see them here
+                  </Text>
+                  <Text style={styles.emptyFavsHint}>
+                    Tap ♡ on any location to save it
+                  </Text>
+                </Pressable>
+              ) : (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  contentContainerStyle={styles.cardRow}>
+                  {favoriteLocations.map(loc => (
+                    <TrendingCard
+                      key={loc.id}
+                      location={loc}
+                      rank={0}
+                      showRank={false}
+                      onPress={() => handleLocationPress(loc.id)}
+                    />
+                  ))}
+                </ScrollView>
+              )}
+            </View>
+          </>
+        )}
 
       </ScrollView>
+
+      {/* Rate App Modal */}
+      <RateAppModal
+        visible={showPrompt}
+        onRate={rated}
+        onDismiss={dismiss}
+      />
     </SafeAreaView>
   );
 }
@@ -194,6 +230,12 @@ function makeStyles(c: AppColors) {
     watchlistRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: c.card, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: c.border },
     watchlistText:    { flex: 1, color: c.textSec, fontSize: 14, fontWeight: '600' },
     watchlistChevron: { color: c.textMuted, fontSize: 18 },
+    welcomeBox:       { alignItems: 'center', paddingVertical: 48, gap: 12 },
+    welcomeEmoji:     { fontSize: 56 },
+    welcomeTitle:     { color: c.text, fontSize: 24, fontWeight: '700', textAlign: 'center' },
+    welcomeSub:       { color: c.textSec, fontSize: 15, textAlign: 'center', lineHeight: 22 },
+    exploreBtn:       { marginTop: 8, backgroundColor: COLORS.primary, borderRadius: 16, paddingHorizontal: 32, paddingVertical: 14 },
+    exploreBtnText:   { color: '#fff', fontSize: 16, fontWeight: '700' },
     section:          { gap: 14 },
     sectionRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
     sectionTitle:     { color: c.text, fontSize: 18, fontWeight: '700' },
