@@ -4,6 +4,7 @@ import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Tex
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusyTimesChart from '@/components/BusyTimesChart';
 import ClaimModal from '@/components/ClaimModal';
+import ConfirmModal from '@/components/ConfirmModal';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import LocationPhoto from '@/components/LocationPhoto';
 import OwnerResponseModal from '@/components/OwnerResponseModal';
@@ -86,7 +87,7 @@ export default function LocationDetailScreen() {
   const {
     reviews, myReview, myLatestReview, canWriteNewReview,
     reviewedLabel, verifiedVisitorIds,
-    averageRating, submitReview, flagReview,
+    averageRating, submitReview, flagReview, deleteReview,
   } = useReviews(id ?? '');
   const claim = useBusinessClaim(id ?? '', location?.name, location?.address);
 
@@ -96,9 +97,10 @@ export default function LocationDetailScreen() {
   const { destination, setHeadingThere, clearDestination, isHeadingThere } = useHeadingThere();
   const { addToWatchlist, removeFromWatchlist, isWatching } = useWatchlist();
 
-  const [showReviewForm,  setShowReviewForm]  = useState(false);
-  const [editingReview,   setEditingReview]   = useState<Review | null>(null);
-  const [showToast,       setShowToast]       = useState(false);
+  const [showReviewForm,     setShowReviewForm]     = useState(false);
+  const [editingReview,      setEditingReview]      = useState<Review | null>(null);
+  const [deletingReviewId,   setDeletingReviewId]   = useState<string | null>(null);
+  const [showToast,          setShowToast]          = useState(false);
   const [showWatchlist,   setShowWatchlist]   = useState(false);
   const [showClaimModal,  setShowClaimModal]  = useState(false);
   const [respondTarget,   setRespondTarget]   = useState<Review | null>(null);
@@ -464,6 +466,7 @@ export default function LocationDetailScreen() {
                     isVerifiedVisit={!!r.userId && verifiedVisitorIds.has(r.userId)}
                     reviewedLabel={reviewedLabel(r)}
                     onFlag={r.userId !== currentUserId ? flagReview : undefined}
+                    onDelete={r.userId === currentUserId ? (rid) => setDeletingReviewId(rid) : undefined}
                   />
                   {/* Owner respond */}
                   {claim.isCurrentUserOwner && (
@@ -577,6 +580,24 @@ export default function LocationDetailScreen() {
           onSubmit={content => claim.submitOwnerResponse(respondTarget.id, content)}
         />
       )}
+
+      <ConfirmModal
+        visible={!!deletingReviewId}
+        title="Delete this review?"
+        message="This cannot be undone."
+        onClose={() => setDeletingReviewId(null)}
+        actions={[
+          {
+            label: 'Delete',
+            destructive: true,
+            onPress: async () => {
+              if (deletingReviewId) await deleteReview(deletingReviewId);
+              setDeletingReviewId(null);
+            },
+          },
+          { label: 'Cancel', cancel: true, onPress: () => {} },
+        ]}
+      />
 
       <BottomNav />
     </SafeAreaView>

@@ -14,6 +14,7 @@ interface Props {
   isAdmin?: boolean;
   reviewedLabel?: string;          // e.g. "Reviewed March 2026"
   onFlag?: (id: string) => void;
+  onDelete?: (id: string) => void;
 }
 
 export default function ReviewCard({
@@ -23,6 +24,7 @@ export default function ReviewCard({
   isAdmin = false,
   reviewedLabel,
   onFlag,
+  onDelete,
 }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
@@ -118,14 +120,24 @@ export default function ReviewCard({
         </ScrollView>
       )}
 
-      {/* Flag button — hidden for own review */}
-      {!isOwn && onFlag && (
-        <Pressable
-          style={({ pressed }) => [styles.flagBtn, pressed && { opacity: 0.6 }]}
-          onPress={() => onFlag(review.id)}>
-          <Text style={styles.flagBtnText}>🚩 Flag</Text>
-        </Pressable>
-      )}
+      <View style={styles.bottomRow}>
+        {/* Flag button — hidden for own review */}
+        {!isOwn && onFlag && (
+          <Pressable
+            style={({ pressed }) => [styles.flagBtn, pressed && { opacity: 0.6 }]}
+            onPress={() => onFlag(review.id)}>
+            <Text style={styles.flagBtnText}>🚩 Flag</Text>
+          </Pressable>
+        )}
+        {/* Delete button — only for own review */}
+        {isOwn && onDelete && (
+          <Pressable
+            style={({ pressed }) => [styles.deleteBtn, pressed && { opacity: 0.6 }]}
+            onPress={() => onDelete(review.id)}>
+            <Text style={styles.deleteBtnText}>🗑 Delete</Text>
+          </Pressable>
+        )}
+      </View>
     </View>
   );
 }
@@ -163,9 +175,14 @@ function makeStyles(c: AppColors) {
     ownerBadgeTxt: { color: COLORS.primary, fontSize: 12, fontWeight: '700' },
     ownerResponseTxt: { color: c.textSec, fontSize: 14, lineHeight: 20 },
 
+    // Bottom row
+    bottomRow:     { flexDirection: 'row', gap: 8 },
     // Flag
     flagBtn:       { alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: c.border },
     flagBtnText:   { color: c.textMuted, fontSize: 11, fontWeight: '600' },
+    // Delete
+    deleteBtn:     { alignSelf: 'flex-start', paddingVertical: 4, paddingHorizontal: 10, borderRadius: 10, borderWidth: 1, borderColor: '#EF444430' },
+    deleteBtnText: { color: '#EF4444', fontSize: 11, fontWeight: '600' },
 
     // Hidden/flagged
     flaggedBox:    { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 12 },

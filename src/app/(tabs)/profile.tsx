@@ -3,9 +3,12 @@ import React, { useCallback, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 // Platform still used for device info in openContactSupport
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import ConfirmModal from '@/components/ConfirmModal';
+import StarRating from '@/components/StarRating';
+import Toast from '@/components/Toast';
 import WatchlistCard from '@/components/WatchlistCard';
 import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
@@ -14,7 +17,9 @@ import type { ThemePreference } from '@/constants/themes';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
-import { formatDate, timeAgo } from '@/utils/crowdUtils';
+import { useMyReviews } from '@/hooks/useMyReviews';
+import { useImpactStats, type ImpactStats } from '@/hooks/useImpactStats';
+import { formatDate } from '@/utils/crowdUtils';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
 const SUPPORT_EMAIL = 'support@rookstechnologies.com';
@@ -25,12 +30,21 @@ export default function ProfileScreen() {
   const { colors, preference, setPreference } = useTheme();
   const styles = makeStyles(colors);
   const { user, logout, deleteAccount } = useAuth();
-  const { myReports, getLocationById } = useAppContext();
+  const { getLocationById, savedLocationIds } = useAppContext();
   const { items: watchlistItems, removeFromWatchlist, renewWatchlistItem, reload: reloadWatchlist } = useWatchlist();
+  const { reviews: myReviews, deleteMyReview, refresh: reloadMyReviews } = useMyReviews();
+  const { stats, refresh: reloadStats } = useImpactStats();
 
   const [modal, setModal] = useState<'logout' | 'delete' | null>(null);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [toast, setToast] = useState('');
+  const [showToast, setShowToast] = useState(false);
 
-  useFocusEffect(useCallback(() => { reloadWatchlist(); }, [reloadWatchlist]));
+  useFocusEffect(useCallback(() => {
+    reloadWatchlist();
+    reloadMyReviews();
+    reloadStats();
+  }, [reloadWatchlist, reloadMyReviews, reloadStats]));
 
   const initials = (user?.name ?? 'U')
     .split(' ')
@@ -39,12 +53,27 @@ export default function ProfileScreen() {
     .toUpperCase()
     .slice(0, 2);
 
-  function openContactSupport() {
+  async function openContactSupport() {
     const deviceInfo = `${Platform.OS} ${Platform.Version}`;
     const body = `App Version: Prescout v${APP_VERSION}\nDevice: ${deviceInfo}\n\nDescribe your issue here:`;
     const url = `mailto:${SUPPORT_EMAIL}?subject=${encodeURIComponent('Prescout Support Request')}&body=${encodeURIComponent(body)}`;
-    Linking.openURL(url);
+    try {
+      const supported = await Linking.canOpenURL(url);
+      if (supported) {
+        await Linking.openURL(url);
+      } else {
+        throw new Error('Mail not supported');
+      }
+    } catch {
+      await Clipboard.setStringAsync(SUPPORT_EMAIL);
+      setToast(`Email copied to clipboard: ${SUPPORT_EMAIL}`);
+      setShowToast(true);
+    }
   }
+
+  const savedLocations = savedLocationIds
+    .map(id => getLocationById(id))
+    .filter(Boolean) as NonNullable<ReturnType<typeof getLocationById>>[];
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -70,31 +99,51 @@ export default function ProfileScreen() {
           </View>
         </View>
 
-        {/* Stats */}
-        <View style={styles.statsRow}>
-          <View style={styles.stat}>
-            <Text style={styles.statNum}>{user?.totalReports ?? 0}</Text>
-            <Text style={styles.statLabel}>Total{'\n'}Reports</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statNum}>{user?.weeklyReports ?? 0}</Text>
-            <Text style={styles.statLabel}>This{'\n'}Week</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.stat}>
-            <Text style={styles.statNum}>{myReports.length}</Text>
-            <Text style={styles.statLabel}>In App{'\n'}Reports</Text>
+        {/* Your Impact */}
+        <View style={styles.impactCard}>
+          <Text style={styles.impactTitle}>📊 Your Contributions</Text>
+          <View style={styles.impactGrid}>
+            {IMPACT_TILES.map(tile => (
+              <View key={tile.key} style={styles.impactTile}>
+                <Text style={styles.impactIcon}>{tile.icon}</Text>
+                <Text style={styles.impactNum}>{stats[tile.key]}</Text>
+                <Text style={styles.impactLabel}>{tile.label}</Text>
+              </View>
+            ))}
           </View>
         </View>
 
-        {/* Favorite venue */}
+        {/* Favorites */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Favorite Venue</Text>
-          <View style={styles.favCard}>
-            <Text style={styles.favEmoji}>⭐</Text>
-            <Text style={styles.favName}>{user?.favoriteVenue}</Text>
-          </View>
+          <Text style={styles.sectionTitle}>❤️ Favorites</Text>
+          {savedLocations.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyEmoji}>🤍</Text>
+              <Text style={styles.emptyText}>No favorites yet. Tap ❤️ on any location to save it.</Text>
+            </View>
+          ) : (
+            <View style={styles.reportList}>
+              {savedLocations.map(loc => (
+                <Pressable
+                  key={loc.id}
+                  style={({ pressed }) => [styles.favLocCard, pressed && styles.pressed]}
+                  onPress={() => router.push(`/location/${loc.id}`)}>
+                  {/* Photo or initial */}
+                  <View style={styles.favLocImg}>
+                    <Text style={styles.favLocInitial}>{loc.name.trim()[0]?.toUpperCase() ?? '?'}</Text>
+                  </View>
+                  <View style={styles.favLocInfo}>
+                    <Text style={styles.favLocName} numberOfLines={1}>{loc.name}</Text>
+                    {loc.currentCrowd && (
+                      <CrowdLevelBadge level={loc.currentCrowd} size="sm" />
+                    )}
+                    <Text style={styles.favLocRating}>⭐ {loc.rating}</Text>
+                  </View>
+                  <Text style={styles.linkChevron}>›</Text>
+                </Pressable>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* Appearance */}
@@ -132,35 +181,53 @@ export default function ProfileScreen() {
           </View>
         )}
 
-        {/* Recent reports */}
+        {/* My Reviews */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Your Reports</Text>
-          {myReports.length === 0 ? (
-            <View style={styles.emptyReports}>
-              <Text style={styles.emptyEmoji}>📝</Text>
-              <Text style={[styles.emptyText, { color: colors.textSec, fontWeight: '600', fontSize: 16 }]}>No reports yet</Text>
-              <Text style={styles.emptyText}>Start reporting crowd levels at nearby places!</Text>
+          <Text style={styles.sectionTitle}>My Reviews</Text>
+          {myReviews.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <Text style={styles.emptyEmoji}>⭐</Text>
+              <Text style={styles.emptyText}>You haven't written any reviews yet.</Text>
             </View>
           ) : (
             <View style={styles.reportList}>
-              {myReports.map(r => {
+              {myReviews.map(r => {
                 const loc = getLocationById(r.locationId);
                 return (
                   <Pressable
                     key={r.id}
-                    style={({ pressed }) => [styles.reportCard, pressed && styles.pressed]}
+                    style={({ pressed }) => [styles.reviewCard, pressed && styles.pressed]}
                     onPress={() => router.push(`/location/${r.locationId}`)}>
-                    <View style={styles.reportTop}>
-                      <Text style={styles.reportLocation} numberOfLines={1}>
-                        {loc?.name ?? 'Unknown Location'}
-                      </Text>
-                      <Text style={styles.reportTime}>{timeAgo(r.timestamp)}</Text>
+                    <View style={styles.reviewCardTop}>
+                      {/* Location photo placeholder */}
+                      <View style={styles.reviewLocImg}>
+                        <Text style={styles.reviewLocInitial}>
+                          {(loc?.name ?? r.locationId).trim()[0]?.toUpperCase() ?? '?'}
+                        </Text>
+                      </View>
+                      <View style={styles.reviewCardMeta}>
+                        <Text style={styles.reviewLocName} numberOfLines={1}>
+                          {loc?.name ?? 'Unknown Location'}
+                        </Text>
+                        <StarRating rating={r.rating} size={13} />
+                        <Text style={styles.reviewDate}>{formatDate(r.createdAt)}</Text>
+                      </View>
                     </View>
-                    <CrowdLevelBadge level={r.crowdLevel} size="sm" />
-                    {r.comment && (
-                      <Text style={styles.reportComment} numberOfLines={2}>"{r.comment}"</Text>
-                    )}
-                    <Text style={styles.reportDate}>{formatDate(r.timestamp)}</Text>
+                    {r.content ? (
+                      <Text style={styles.reviewPreview} numberOfLines={2}>"{r.content}"</Text>
+                    ) : null}
+                    <View style={styles.reviewActions}>
+                      <Pressable
+                        style={styles.reviewEditBtn}
+                        onPress={(e) => { e.stopPropagation?.(); router.push(`/location/${r.locationId}`); }}>
+                        <Text style={styles.reviewEditTxt}>✏️ Edit</Text>
+                      </Pressable>
+                      <Pressable
+                        style={styles.reviewDeleteBtn}
+                        onPress={(e) => { e.stopPropagation?.(); setDeletingReviewId(r.id); }}>
+                        <Text style={styles.reviewDeleteTxt}>🗑 Delete</Text>
+                      </Pressable>
+                    </View>
                   </Pressable>
                 );
               })}
@@ -245,9 +312,42 @@ export default function ProfileScreen() {
           { label: 'Cancel', cancel: true, onPress: () => {} },
         ]}
       />
+
+      {/* Delete review confirmation */}
+      <ConfirmModal
+        visible={!!deletingReviewId}
+        title="Delete this review?"
+        message="This cannot be undone."
+        onClose={() => setDeletingReviewId(null)}
+        actions={[
+          {
+            label: 'Delete',
+            destructive: true,
+            onPress: async () => {
+              if (deletingReviewId) await deleteMyReview(deletingReviewId);
+              setDeletingReviewId(null);
+            },
+          },
+          { label: 'Cancel', cancel: true, onPress: () => {} },
+        ]}
+      />
+
+      <Toast
+        message={toast}
+        visible={showToast}
+        onHide={() => setShowToast(false)}
+      />
     </SafeAreaView>
   );
 }
+
+const IMPACT_TILES: { key: keyof ImpactStats; icon: string; label: string }[] = [
+  { key: 'crowdReports',     icon: '👥', label: 'Crowd\nReports' },
+  { key: 'quickReports',     icon: '⚡', label: 'Quick\nReports' },
+  { key: 'reviews',          icon: '⭐', label: 'Reviews' },
+  { key: 'watchlistUsed',    icon: '👁️', label: 'Watchlist\nUsed' },
+  { key: 'headingThereUsed', icon: '🚗', label: 'Heading\nThere' },
+];
 
 const THEME_OPTIONS: { key: ThemePreference; icon: string; label: string }[] = [
   { key: 'dark',   icon: '🌙', label: 'Dark'   },
@@ -271,27 +371,21 @@ function makeStyles(c: AppColors) {
     userName:         { color: c.text, fontSize: 16, fontWeight: '600' },
     userEmail:        { color: c.textSec, fontSize: 12 },
     joinDate:         { color: c.textMuted, fontSize: 12, marginTop: 4 },
-    statsRow:         { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', justifyContent: 'space-around', borderWidth: 1, borderColor: c.border },
-    stat:             { alignItems: 'center', gap: 6 },
-    statNum:          { color: COLORS.primary, fontSize: 28, fontWeight: '700' },
-    statLabel:        { color: c.textSec, fontSize: 12, textAlign: 'center', lineHeight: 16 },
-    statDivider:      { width: 1, backgroundColor: c.border },
+    // Impact card
+    impactCard:       { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: c.border },
+    impactTitle:      { color: c.text, fontSize: 16, fontWeight: '700' },
+    impactGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    impactTile:       { flex: 1, minWidth: '28%', backgroundColor: c.surface, borderRadius: 14, padding: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: c.border },
+    impactIcon:       { fontSize: 22 },
+    impactNum:        { color: COLORS.primary, fontSize: 22, fontWeight: '700' },
+    impactLabel:      { color: c.textSec, fontSize: 11, textAlign: 'center', lineHeight: 14 },
     section:          { gap: 14 },
     sectionTitle:     { color: c.text, fontSize: 18, fontWeight: '700' },
-    favCard:          { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
-    favEmoji:         { fontSize: 28 },
-    favName:          { color: c.text, fontSize: 16, fontWeight: '600' },
-    emptyReports:     { alignItems: 'center', paddingVertical: 40, gap: 8 },
-    emptyEmoji:       { fontSize: 40 },
+    emptyCard:        { backgroundColor: c.card, borderRadius: 16, padding: 20, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: c.border },
+    emptyEmoji:       { fontSize: 32 },
     emptyText:        { color: c.textMuted, fontSize: 14, textAlign: 'center' },
     reportList:       { gap: 10 },
-    reportCard:       { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 8, borderWidth: 1, borderColor: c.border },
     pressed:          { opacity: 0.75 },
-    reportTop:        { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-    reportLocation:   { color: c.text, fontSize: 16, fontWeight: '600', flex: 1 },
-    reportTime:       { color: c.textMuted, fontSize: 12 },
-    reportComment:    { color: c.textSec, fontSize: 14, fontStyle: 'italic' },
-    reportDate:       { color: c.textMuted, fontSize: 12 },
     themeRow:         { flexDirection: 'row', gap: 10 },
     themeBtn:         { flex: 1, alignItems: 'center', gap: 6, backgroundColor: c.card, borderRadius: 16, paddingVertical: 14, borderWidth: 1, borderColor: c.border },
     themeBtnActive:   { borderColor: COLORS.primary, backgroundColor: COLORS.primary + '15' },
@@ -309,5 +403,26 @@ function makeStyles(c: AppColors) {
     deleteBtnText:    { color: COLORS.packed, fontSize: 15, fontWeight: '600' },
     versionRow:       { alignItems: 'center', paddingVertical: 8 },
     versionText:      { color: c.textMuted, fontSize: 12 },
+    // Favorites
+    favLocCard:       { backgroundColor: c.card, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
+    favLocImg:        { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
+    favLocInitial:    { fontSize: 20, color: COLORS.primary, fontWeight: '700' },
+    favLocInfo:       { flex: 1, gap: 4 },
+    favLocName:       { color: c.text, fontSize: 15, fontWeight: '600' },
+    favLocRating:     { color: c.textSec, fontSize: 12 },
+    // My Reviews
+    reviewCard:       { backgroundColor: c.card, borderRadius: 16, padding: 14, gap: 10, borderWidth: 1, borderColor: c.border },
+    reviewCardTop:    { flexDirection: 'row', gap: 10, alignItems: 'center' },
+    reviewLocImg:     { width: 44, height: 44, borderRadius: 10, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
+    reviewLocInitial: { fontSize: 18, color: COLORS.primary, fontWeight: '700' },
+    reviewCardMeta:   { flex: 1, gap: 3 },
+    reviewLocName:    { color: c.text, fontSize: 15, fontWeight: '600' },
+    reviewDate:       { color: c.textMuted, fontSize: 12 },
+    reviewPreview:    { color: c.textSec, fontSize: 13, fontStyle: 'italic' },
+    reviewActions:    { flexDirection: 'row', gap: 8 },
+    reviewEditBtn:    { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: COLORS.primary + '50', backgroundColor: COLORS.primary + '12' },
+    reviewEditTxt:    { color: COLORS.primary, fontSize: 12, fontWeight: '600' },
+    reviewDeleteBtn:  { paddingVertical: 5, paddingHorizontal: 12, borderRadius: 10, borderWidth: 1, borderColor: '#EF444430', backgroundColor: '#EF444410' },
+    reviewDeleteTxt:  { color: '#EF4444', fontSize: 12, fontWeight: '600' },
   });
 }

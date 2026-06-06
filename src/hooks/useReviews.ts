@@ -230,6 +230,26 @@ export function useReviews(locationId: string) {
     await fetchReviews();
   }
 
+  // ── Delete a review ───────────────────────────────────────────────────────
+  async function deleteReview(reviewId: string): Promise<string | null> {
+    if (!isSupabaseConfigured || !currentUserId) return 'Not authenticated.';
+    try {
+      const target = reviews.find(r => r.id === reviewId);
+      if (target?.photos && target.photos.length > 0) {
+        const paths = target.photos.map(u => u.split('/review-photos/')[1]).filter(Boolean);
+        if (paths.length) await supabase.storage.from('review-photos').remove(paths);
+        await supabase.from('review_photos').delete().eq('review_id', reviewId);
+      }
+      const { error: err } = await supabase.from('reviews').delete().eq('id', reviewId).eq('user_id', currentUserId);
+      if (err) throw err;
+      cache.delete(locationId);
+      setReviews(prev => prev.filter(r => r.id !== reviewId));
+      return null;
+    } catch (err: any) {
+      return err.message ?? 'Failed to delete review.';
+    }
+  }
+
   return {
     reviews,
     myReview: myLatestReview,      // alias for backwards compat
@@ -242,6 +262,7 @@ export function useReviews(locationId: string) {
     error,
     submitReview,
     flagReview,
+    deleteReview,
     refresh: fetchReviews,
   };
 }
