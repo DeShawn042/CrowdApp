@@ -7,9 +7,12 @@ import * as Clipboard from 'expo-clipboard';
 import Constants from 'expo-constants';
 import CrowdLevelBadge from '@/components/CrowdLevelBadge';
 import ConfirmModal from '@/components/ConfirmModal';
+import LocationPhoto from '@/components/LocationPhoto';
 import StarRating from '@/components/StarRating';
 import Toast from '@/components/Toast';
 import WatchlistCard from '@/components/WatchlistCard';
+import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
+import type { Location } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
@@ -17,7 +20,7 @@ import type { ThemePreference } from '@/constants/themes';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
-import { useMyReviews } from '@/hooks/useMyReviews';
+import { useMyReviews, type MyReview } from '@/hooks/useMyReviews';
 import { useImpactStats, type ImpactStats } from '@/hooks/useImpactStats';
 import { formatDate } from '@/utils/crowdUtils';
 
@@ -124,23 +127,7 @@ export default function ProfileScreen() {
           ) : (
             <View style={styles.reportList}>
               {savedLocations.map(loc => (
-                <Pressable
-                  key={loc.id}
-                  style={({ pressed }) => [styles.favLocCard, pressed && styles.pressed]}
-                  onPress={() => router.push(`/location/${loc.id}`)}>
-                  {/* Photo or initial */}
-                  <View style={styles.favLocImg}>
-                    <Text style={styles.favLocInitial}>{loc.name.trim()[0]?.toUpperCase() ?? '?'}</Text>
-                  </View>
-                  <View style={styles.favLocInfo}>
-                    <Text style={styles.favLocName} numberOfLines={1}>{loc.name}</Text>
-                    {loc.currentCrowd && (
-                      <CrowdLevelBadge level={loc.currentCrowd} size="sm" />
-                    )}
-                    <Text style={styles.favLocRating}>⭐ {loc.rating}</Text>
-                  </View>
-                  <Text style={styles.linkChevron}>›</Text>
-                </Pressable>
+                <FavLocationCard key={loc.id} loc={loc} styles={styles} />
               ))}
             </View>
           )}
@@ -191,46 +178,15 @@ export default function ProfileScreen() {
             </View>
           ) : (
             <View style={styles.reportList}>
-              {myReviews.map(r => {
-                const loc = getLocationById(r.locationId);
-                return (
-                  <Pressable
-                    key={r.id}
-                    style={({ pressed }) => [styles.reviewCard, pressed && styles.pressed]}
-                    onPress={() => router.push(`/location/${r.locationId}`)}>
-                    <View style={styles.reviewCardTop}>
-                      {/* Location photo placeholder */}
-                      <View style={styles.reviewLocImg}>
-                        <Text style={styles.reviewLocInitial}>
-                          {(loc?.name ?? r.locationId).trim()[0]?.toUpperCase() ?? '?'}
-                        </Text>
-                      </View>
-                      <View style={styles.reviewCardMeta}>
-                        <Text style={styles.reviewLocName} numberOfLines={1}>
-                          {loc?.name ?? 'Unknown Location'}
-                        </Text>
-                        <StarRating rating={r.rating} size={13} />
-                        <Text style={styles.reviewDate}>{formatDate(r.createdAt)}</Text>
-                      </View>
-                    </View>
-                    {r.content ? (
-                      <Text style={styles.reviewPreview} numberOfLines={2}>"{r.content}"</Text>
-                    ) : null}
-                    <View style={styles.reviewActions}>
-                      <Pressable
-                        style={styles.reviewEditBtn}
-                        onPress={(e) => { e.stopPropagation?.(); router.push(`/location/${r.locationId}`); }}>
-                        <Text style={styles.reviewEditTxt}>✏️ Edit</Text>
-                      </Pressable>
-                      <Pressable
-                        style={styles.reviewDeleteBtn}
-                        onPress={(e) => { e.stopPropagation?.(); setDeletingReviewId(r.id); }}>
-                        <Text style={styles.reviewDeleteTxt}>🗑 Delete</Text>
-                      </Pressable>
-                    </View>
-                  </Pressable>
-                );
-              })}
+              {myReviews.map(r => (
+                <MyReviewCard
+                  key={r.id}
+                  review={r}
+                  loc={getLocationById(r.locationId)}
+                  styles={styles}
+                  onDelete={() => setDeletingReviewId(r.id)}
+                />
+              ))}
             </View>
           )}
         </View>
@@ -341,6 +297,75 @@ export default function ProfileScreen() {
   );
 }
 
+// ── Sub-components (each needs its own hook call) ─────────────────────────
+
+function FavLocationCard({ loc, styles }: { loc: Location; styles: ReturnType<typeof makeStyles> }) {
+  const photoUrl = usePlacesPhoto(loc);
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.favLocCard, pressed && styles.pressed]}
+      onPress={() => router.push(`/location/${loc.id}`)}>
+      <LocationPhoto type={loc.type} photoUrl={photoUrl} size={48} borderRadius={12} name={loc.name} />
+      <View style={styles.favLocInfo}>
+        <Text style={styles.favLocName} numberOfLines={1}>{loc.name}</Text>
+        {loc.currentCrowd && <CrowdLevelBadge level={loc.currentCrowd} size="sm" />}
+        <Text style={styles.favLocRating}>⭐ {loc.rating}</Text>
+      </View>
+      <Text style={styles.linkChevron}>›</Text>
+    </Pressable>
+  );
+}
+
+function MyReviewCard({
+  review, loc, styles, onDelete,
+}: {
+  review: MyReview;
+  loc: Location | undefined;
+  styles: ReturnType<typeof makeStyles>;
+  onDelete: () => void;
+}) {
+  const photoUrl = usePlacesPhoto(loc);
+  return (
+    <Pressable
+      style={({ pressed }) => [styles.reviewCard, pressed && styles.pressed]}
+      onPress={() => router.push(`/location/${review.locationId}`)}>
+      <View style={styles.reviewCardTop}>
+        <LocationPhoto
+          type={loc?.type ?? 'other'}
+          photoUrl={photoUrl}
+          size={44}
+          borderRadius={10}
+          name={loc?.name ?? review.locationId}
+        />
+        <View style={styles.reviewCardMeta}>
+          <Text style={styles.reviewLocName} numberOfLines={1}>
+            {loc?.name ?? 'Unknown Location'}
+          </Text>
+          <StarRating rating={review.rating} size={13} />
+          <Text style={styles.reviewDate}>{formatDate(review.createdAt)}</Text>
+        </View>
+      </View>
+      {review.content ? (
+        <Text style={styles.reviewPreview} numberOfLines={2}>"{review.content}"</Text>
+      ) : null}
+      <View style={styles.reviewActions}>
+        <Pressable
+          style={styles.reviewEditBtn}
+          onPress={(e) => { e.stopPropagation?.(); router.push(`/location/${review.locationId}`); }}>
+          <Text style={styles.reviewEditTxt}>✏️ Edit</Text>
+        </Pressable>
+        <Pressable
+          style={styles.reviewDeleteBtn}
+          onPress={(e) => { e.stopPropagation?.(); onDelete(); }}>
+          <Text style={styles.reviewDeleteTxt}>🗑 Delete</Text>
+        </Pressable>
+      </View>
+    </Pressable>
+  );
+}
+
+// ──────────────────────────────────────────────────────────────────────────
+
 const IMPACT_TILES: { key: keyof ImpactStats; icon: string; label: string }[] = [
   { key: 'crowdReports',     icon: '👥', label: 'Crowd\nReports' },
   { key: 'quickReports',     icon: '⚡', label: 'Quick\nReports' },
@@ -405,16 +430,12 @@ function makeStyles(c: AppColors) {
     versionText:      { color: c.textMuted, fontSize: 12 },
     // Favorites
     favLocCard:       { backgroundColor: c.card, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
-    favLocImg:        { width: 48, height: 48, borderRadius: 12, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
-    favLocInitial:    { fontSize: 20, color: COLORS.primary, fontWeight: '700' },
     favLocInfo:       { flex: 1, gap: 4 },
     favLocName:       { color: c.text, fontSize: 15, fontWeight: '600' },
     favLocRating:     { color: c.textSec, fontSize: 12 },
     // My Reviews
     reviewCard:       { backgroundColor: c.card, borderRadius: 16, padding: 14, gap: 10, borderWidth: 1, borderColor: c.border },
     reviewCardTop:    { flexDirection: 'row', gap: 10, alignItems: 'center' },
-    reviewLocImg:     { width: 44, height: 44, borderRadius: 10, backgroundColor: COLORS.primary + '25', alignItems: 'center', justifyContent: 'center' },
-    reviewLocInitial: { fontSize: 18, color: COLORS.primary, fontWeight: '700' },
     reviewCardMeta:   { flex: 1, gap: 3 },
     reviewLocName:    { color: c.text, fontSize: 15, fontWeight: '600' },
     reviewDate:       { color: c.textMuted, fontSize: 12 },
