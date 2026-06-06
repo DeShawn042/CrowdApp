@@ -78,7 +78,6 @@ export default function ReviewForm({ visible, onClose, existingReview, onSubmit 
 
   async function handleSubmit() {
     if (rating === 0) { setError('Please select a star rating.'); return; }
-    if (!content.trim()) { setError('Please write a review.'); return; }
     setLoading(true);
     setError(null);
     const err = await onSubmit(rating, content.trim(), newPhotos, keptUrls);
@@ -116,7 +115,7 @@ export default function ReviewForm({ visible, onClose, existingReview, onSubmit 
               style={[styles.input, focused && styles.inputFocused]}
               value={content}
               onChangeText={setContent}
-              placeholder="What was your experience? Share the details..."
+              placeholder="Share your experience (optional)"
               placeholderTextColor={COLORS.textMuted}
               multiline
               maxLength={400}
@@ -179,11 +178,11 @@ export default function ReviewForm({ visible, onClose, existingReview, onSubmit 
           <Pressable
             style={({ pressed }) => [
               styles.submitBtn,
-              (rating === 0 || !content.trim()) && styles.submitDisabled,
+              rating === 0 && styles.submitDisabled,
               pressed && { opacity: 0.85, transform: [{ scale: 0.99 }] },
             ]}
             onPress={handleSubmit}
-            disabled={loading || rating === 0 || !content.trim()}>
+            disabled={loading || rating === 0}>
             {loading
               ? <ActivityIndicator color="#fff" />
               : <Text style={styles.submitTxt}>{existingReview ? 'Update Review' : 'Post Review'}</Text>

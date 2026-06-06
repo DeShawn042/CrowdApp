@@ -96,7 +96,9 @@ export default function ReviewCard({
         <Text style={[styles.reviewedLabel, { color: colors.textMuted }]}>{reviewedLabel}</Text>
       )}
 
-      <Text style={[styles.content, { color: colors.textSec }]}>{review.content}</Text>
+      {review.content ? (
+        <Text style={[styles.content, { color: colors.textSec }]}>{review.content}</Text>
+      ) : null}
 
       {/* Owner response */}
       {review.ownerResponse && (
