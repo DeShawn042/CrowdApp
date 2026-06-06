@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import HeadingThereCard from '@/components/HeadingThereCard';
 import TrendingCard from '@/components/TrendingCard';
+import WatchlistHomeCard from '@/components/WatchlistHomeCard';
 import RateAppModal from '@/components/RateAppModal';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
@@ -23,7 +24,10 @@ import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
 import { requestNotificationPermission, setupNotificationCategories, useNotificationResponse } from '@/hooks/useNotifications';
 import { useTrending } from '@/hooks/useTrending';
+import { getCrowdDisplay } from '@/utils/crowdUtils';
 import type { TrendingLocation } from '@/hooks/useTrending';
+
+const WATCHLIST_HOME_LIMIT = 5;
 
 function getGreeting() {
   const h = new Date().getHours();
@@ -34,7 +38,7 @@ function getGreeting() {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport } = useAppContext();
+  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport, getLocationById, getReportsForLocation } = useAppContext();
 
   const { trending, loading: trendingLoading } = useTrending(locations);
   const { colors } = useTheme();
@@ -78,6 +82,10 @@ export default function HomeScreen() {
     router.push(`/location/${id}`);
   }
 
+  // Active watchlist items only (capped for home screen)
+  const visibleWatchlist = watchlistItems.slice(0, WATCHLIST_HOME_LIMIT);
+  const hasMoreWatchlist  = watchlistItems.length > WATCHLIST_HOME_LIMIT;
+
   // New-user empty state: no favorites, no trending, not loading
   const isNewUser = !trendingLoading && trending.length === 0 && favoriteLocations.length === 0;
 
@@ -106,16 +114,40 @@ export default function HomeScreen() {
           />
         )}
 
-        {/* Watchlist indicator */}
-        {watchlistItems.length > 0 && (
-          <Pressable
-            style={({ pressed }) => [styles.watchlistRow, pressed && { opacity: 0.75 }]}
-            onPress={() => router.push('/(tabs)/profile')}>
-            <Text style={styles.watchlistText}>
-              👁️ Watching {watchlistItems.length} {watchlistItems.length === 1 ? 'place' : 'places'}
-            </Text>
-            <Text style={styles.watchlistChevron}>›</Text>
-          </Pressable>
+        {/* Watching section — hidden when empty */}
+        {visibleWatchlist.length > 0 && (
+          <View style={styles.section}>
+            <View style={styles.sectionRow}>
+              <Text style={styles.sectionTitle}>👁️  Watching</Text>
+              {hasMoreWatchlist && (
+                <Pressable onPress={() => router.push('/(tabs)/profile')}>
+                  <Text style={styles.seeAll}>See all ({watchlistItems.length})</Text>
+                </Pressable>
+              )}
+            </View>
+
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.cardRow}>
+              {visibleWatchlist.map(item => {
+                const loc      = getLocationById(item.placeId);
+                const reports  = getReportsForLocation(item.placeId);
+                const display  = loc ? getCrowdDisplay(loc, reports) : null;
+                const crowd    = display?.level ?? loc?.currentCrowd ?? null;
+
+                return (
+                  <WatchlistHomeCard
+                    key={item.id}
+                    item={item}
+                    currentCrowd={crowd}
+                    locationType={loc?.type}
+                    onPress={() => handleLocationPress(item.placeId)}
+                  />
+                );
+              })}
+            </ScrollView>
+          </View>
         )}
 
         {/* New-user welcome empty state */}
@@ -221,33 +253,31 @@ export default function HomeScreen() {
 
 function makeStyles(c: AppColors) {
   return StyleSheet.create({
-    safe:             { flex: 1, backgroundColor: c.bg },
-    scroll:           { flex: 1 },
-    content:          { padding: 20, gap: 24, paddingBottom: 80 },
-    header:           { gap: 2 },
-    greeting:         { color: c.textSec, fontSize: 14 },
-    userName:         { color: c.text, fontSize: 24, fontWeight: '700' },
-    watchlistRow:     { flexDirection: 'row', alignItems: 'center', backgroundColor: c.card, borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: c.border },
-    watchlistText:    { flex: 1, color: c.textSec, fontSize: 14, fontWeight: '600' },
-    watchlistChevron: { color: c.textMuted, fontSize: 18 },
-    welcomeBox:       { alignItems: 'center', paddingVertical: 48, gap: 12 },
-    welcomeEmoji:     { fontSize: 56 },
-    welcomeTitle:     { color: c.text, fontSize: 24, fontWeight: '700', textAlign: 'center' },
-    welcomeSub:       { color: c.textSec, fontSize: 15, textAlign: 'center', lineHeight: 22 },
-    exploreBtn:       { marginTop: 8, backgroundColor: COLORS.primary, borderRadius: 16, paddingHorizontal: 32, paddingVertical: 14 },
-    exploreBtnText:   { color: '#fff', fontSize: 16, fontWeight: '700' },
-    section:          { gap: 14 },
-    sectionRow:       { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-    sectionTitle:     { color: c.text, fontSize: 18, fontWeight: '700' },
-    sectionSub:       { color: c.textMuted, fontSize: 12 },
-    cardRow:          { gap: 10, paddingRight: 4 },
-    loadingRow:       { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 40 },
-    loadingText:      { color: c.textMuted, fontSize: 14 },
-    emptyBox:         { alignItems: 'center', paddingVertical: 40, gap: 8 },
-    emptyText:        { color: c.textMuted, fontSize: 14 },
-    emptyFavs:        { backgroundColor: c.card, borderRadius: 16, padding: 16, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: c.border },
-    emptyFavsIcon:    { fontSize: 40 },
-    emptyFavsText:    { color: c.textSec, fontSize: 16, fontWeight: '600', textAlign: 'center' },
-    emptyFavsHint:    { color: c.textMuted, fontSize: 12, textAlign: 'center' },
+    safe:           { flex: 1, backgroundColor: c.bg },
+    scroll:         { flex: 1 },
+    content:        { padding: 20, gap: 24, paddingBottom: 80 },
+    header:         { gap: 2 },
+    greeting:       { color: c.textSec, fontSize: 14 },
+    userName:       { color: c.text, fontSize: 24, fontWeight: '700' },
+    welcomeBox:     { alignItems: 'center', paddingVertical: 48, gap: 12 },
+    welcomeEmoji:   { fontSize: 56 },
+    welcomeTitle:   { color: c.text, fontSize: 24, fontWeight: '700', textAlign: 'center' },
+    welcomeSub:     { color: c.textSec, fontSize: 15, textAlign: 'center', lineHeight: 22 },
+    exploreBtn:     { marginTop: 8, backgroundColor: COLORS.primary, borderRadius: 16, paddingHorizontal: 32, paddingVertical: 14 },
+    exploreBtnText: { color: '#fff', fontSize: 16, fontWeight: '700' },
+    section:        { gap: 14 },
+    sectionRow:     { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
+    sectionTitle:   { color: c.text, fontSize: 18, fontWeight: '700' },
+    sectionSub:     { color: c.textMuted, fontSize: 12 },
+    seeAll:         { color: COLORS.primary, fontSize: 13, fontWeight: '600' },
+    cardRow:        { gap: 10, paddingRight: 4 },
+    loadingRow:     { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 40 },
+    loadingText:    { color: c.textMuted, fontSize: 14 },
+    emptyBox:       { alignItems: 'center', paddingVertical: 40, gap: 8 },
+    emptyText:      { color: c.textMuted, fontSize: 14 },
+    emptyFavs:      { backgroundColor: c.card, borderRadius: 16, padding: 16, alignItems: 'center', gap: 8, borderWidth: 1, borderColor: c.border },
+    emptyFavsIcon:  { fontSize: 40 },
+    emptyFavsText:  { color: c.textSec, fontSize: 16, fontWeight: '600', textAlign: 'center' },
+    emptyFavsHint:  { color: c.textMuted, fontSize: 12, textAlign: 'center' },
   });
 }
