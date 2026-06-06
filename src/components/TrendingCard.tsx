@@ -12,9 +12,10 @@ interface Props {
   rank: number;
   onPress: () => void;
   showRank?: boolean;
+  onRemove?: () => void;
 }
 
-export default function TrendingCard({ location, rank, onPress, showRank = true }: Props) {
+export default function TrendingCard({ location, rank, onPress, showRank = true, onRemove }: Props) {
   const { colors } = useTheme();
   const crowdColor = CROWD_COLORS[location.currentCrowd];
   const photoUrl   = usePlacesPhoto(location);
@@ -27,6 +28,11 @@ export default function TrendingCard({ location, rank, onPress, showRank = true 
         <View style={styles.rankBadge}>
           <Text style={styles.rankText}>#{rank}</Text>
         </View>
+      )}
+      {onRemove && (
+        <Pressable style={styles.removeBtn} onPress={onRemove} hitSlop={8}>
+          <Text style={styles.removeTxt}>✕</Text>
+        </Pressable>
       )}
 
       <LocationPhoto
@@ -64,6 +70,8 @@ const styles = StyleSheet.create({
   pressed:    { opacity: 0.75, transform: [{ scale: 0.98 }] },
   rankBadge:  { position: 'absolute', top: 10, right: 10, backgroundColor: COLORS.primary + '25', borderRadius: 14, paddingHorizontal: 6, paddingVertical: 2, zIndex: 1 },
   rankText:   { color: COLORS.primary, fontSize: 10, fontWeight: '700' },
+  removeBtn:  { position: 'absolute', top: 8, right: 8, width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center', zIndex: 2 },
+  removeTxt:  { color: '#fff', fontSize: 10, fontWeight: '700', lineHeight: 12 },
   name:       { color: COLORS.text, fontSize: 14, fontWeight: '600', lineHeight: 20 },
   crowdPill:  { flexDirection: 'row', alignItems: 'center', gap: 4, borderWidth: 1, borderRadius: 14, paddingHorizontal: 6, paddingVertical: 3, alignSelf: 'flex-start' },
   dot:        { width: 5, height: 5, borderRadius: 3 },

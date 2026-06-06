@@ -33,13 +33,14 @@ export default function ProfileScreen() {
   const { colors, preference, setPreference } = useTheme();
   const styles = makeStyles(colors);
   const { user, logout, deleteAccount } = useAuth();
-  const { getLocationById, savedLocationIds } = useAppContext();
+  const { getLocationById, savedLocationIds, toggleSaved } = useAppContext();
   const { items: watchlistItems, removeFromWatchlist, renewWatchlistItem, reload: reloadWatchlist } = useWatchlist();
   const { reviews: myReviews, deleteMyReview, refresh: reloadMyReviews } = useMyReviews();
   const { stats, refresh: reloadStats } = useImpactStats();
 
   const [modal, setModal] = useState<'logout' | 'delete' | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [removingFav, setRemovingFav] = useState<{ id: string; name: string } | null>(null);
   const [toast, setToast] = useState('');
   const [showToast, setShowToast] = useState(false);
 
@@ -127,7 +128,12 @@ export default function ProfileScreen() {
           ) : (
             <View style={styles.reportList}>
               {savedLocations.map(loc => (
-                <FavLocationCard key={loc.id} loc={loc} styles={styles} />
+                <FavLocationCard
+                  key={loc.id}
+                  loc={loc}
+                  styles={styles}
+                  onRemove={() => setRemovingFav({ id: loc.id, name: loc.name })}
+                />
               ))}
             </View>
           )}
@@ -288,6 +294,25 @@ export default function ProfileScreen() {
         ]}
       />
 
+      {/* Remove favorite confirmation */}
+      <ConfirmModal
+        visible={!!removingFav}
+        title="Remove from Favorites?"
+        message={removingFav ? `Remove ${removingFav.name} from favorites?` : ''}
+        onClose={() => setRemovingFav(null)}
+        actions={[
+          {
+            label: 'Remove',
+            destructive: true,
+            onPress: async () => {
+              if (removingFav) await toggleSaved(removingFav.id);
+              setRemovingFav(null);
+            },
+          },
+          { label: 'Cancel', cancel: true, onPress: () => {} },
+        ]}
+      />
+
       <Toast
         message={toast}
         visible={showToast}
@@ -299,7 +324,7 @@ export default function ProfileScreen() {
 
 // ── Sub-components (each needs its own hook call) ─────────────────────────
 
-function FavLocationCard({ loc, styles }: { loc: Location; styles: ReturnType<typeof makeStyles> }) {
+function FavLocationCard({ loc, styles, onRemove }: { loc: Location; styles: ReturnType<typeof makeStyles>; onRemove: () => void }) {
   const photoUrl = usePlacesPhoto(loc);
   return (
     <Pressable
@@ -311,7 +336,9 @@ function FavLocationCard({ loc, styles }: { loc: Location; styles: ReturnType<ty
         {loc.currentCrowd && <CrowdLevelBadge level={loc.currentCrowd} size="sm" />}
         <Text style={styles.favLocRating}>⭐ {loc.rating}</Text>
       </View>
-      <Text style={styles.linkChevron}>›</Text>
+      <Pressable style={styles.favRemoveBtn} onPress={onRemove} hitSlop={8}>
+        <Text style={styles.favRemoveTxt}>✕</Text>
+      </Pressable>
     </Pressable>
   );
 }
@@ -431,6 +458,8 @@ function makeStyles(c: AppColors) {
     // Favorites
     favLocCard:       { backgroundColor: c.card, borderRadius: 16, padding: 14, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border },
     favLocInfo:       { flex: 1, gap: 4 },
+    favRemoveBtn:     { width: 20, height: 20, borderRadius: 10, backgroundColor: 'rgba(0,0,0,0.55)', alignItems: 'center', justifyContent: 'center' },
+    favRemoveTxt:     { color: '#fff', fontSize: 10, fontWeight: '700', lineHeight: 12 },
     favLocName:       { color: c.text, fontSize: 15, fontWeight: '600' },
     favLocRating:     { color: c.textSec, fontSize: 12 },
     // My Reviews

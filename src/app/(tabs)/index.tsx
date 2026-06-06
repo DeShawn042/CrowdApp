@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useEffect, useMemo } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
@@ -9,6 +9,7 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import ConfirmModal from '@/components/ConfirmModal';
 import HeadingThereCard from '@/components/HeadingThereCard';
 import TrendingCard from '@/components/TrendingCard';
 import WatchlistHomeCard from '@/components/WatchlistHomeCard';
@@ -38,7 +39,8 @@ function getGreeting() {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport, getLocationById, getReportsForLocation } = useAppContext();
+  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport, getLocationById, getReportsForLocation, toggleSaved } = useAppContext();
+  const [removingFav, setRemovingFav] = useState<{ id: string; name: string } | null>(null);
 
   const { trending, loading: trendingLoading } = useTrending(locations);
   const { colors } = useTheme();
@@ -232,6 +234,7 @@ export default function HomeScreen() {
                       rank={0}
                       showRank={false}
                       onPress={() => handleLocationPress(loc.id)}
+                      onRemove={() => setRemovingFav({ id: loc.id, name: loc.name })}
                     />
                   ))}
                 </ScrollView>
@@ -247,6 +250,25 @@ export default function HomeScreen() {
         visible={showPrompt}
         onRate={rated}
         onDismiss={dismiss}
+      />
+
+      {/* Remove favorite confirmation */}
+      <ConfirmModal
+        visible={!!removingFav}
+        title="Remove from Favorites?"
+        message={removingFav ? `Remove ${removingFav.name} from favorites?` : ''}
+        onClose={() => setRemovingFav(null)}
+        actions={[
+          {
+            label: 'Remove',
+            destructive: true,
+            onPress: async () => {
+              if (removingFav) await toggleSaved(removingFav.id);
+              setRemovingFav(null);
+            },
+          },
+          { label: 'Cancel', cancel: true, onPress: () => {} },
+        ]}
       />
     </SafeAreaView>
   );
