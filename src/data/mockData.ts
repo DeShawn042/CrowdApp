@@ -16,6 +16,8 @@ export interface Review {
   updatedAt: string;
   photos: string[];
   ownerResponse?: string;
+  flagCount: number;
+  isHidden: boolean;
 }
 
 export interface GoogleReview {

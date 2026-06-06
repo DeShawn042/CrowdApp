@@ -83,7 +83,11 @@ export default function LocationDetailScreen() {
   const isSaved = savedLocationIds.includes(id ?? '');
 
   const photoUrl = usePlacesPhoto(location ?? undefined);
-  const { reviews, myReview, averageRating, submitReview } = useReviews(id ?? '');
+  const {
+    reviews, myReview, myLatestReview, canWriteNewReview,
+    reviewedLabel, verifiedVisitorIds,
+    averageRating, submitReview, flagReview,
+  } = useReviews(id ?? '');
   const claim = useBusinessClaim(id ?? '', location?.name, location?.address);
 
   const { colors } = useTheme();
@@ -93,6 +97,7 @@ export default function LocationDetailScreen() {
   const { addToWatchlist, removeFromWatchlist, isWatching } = useWatchlist();
 
   const [showReviewForm,  setShowReviewForm]  = useState(false);
+  const [editingReview,   setEditingReview]   = useState<Review | null>(null);
   const [showToast,       setShowToast]       = useState(false);
   const [showWatchlist,   setShowWatchlist]   = useState(false);
   const [showClaimModal,  setShowClaimModal]  = useState(false);
@@ -421,13 +426,27 @@ export default function LocationDetailScreen() {
             )}
           </View>
 
-          <Pressable
-            style={({ pressed }) => [styles.writeReviewBtn, pressed && { opacity: 0.8 }]}
-            onPress={() => setShowReviewForm(true)}>
-            <Text style={styles.writeReviewText}>
-              {myReview ? '✏️  Edit your review' : '＋  Write a review'}
-            </Text>
-          </Pressable>
+          {/* Write / Edit button */}
+          {canWriteNewReview ? (
+            <Pressable
+              style={({ pressed }) => [styles.writeReviewBtn, pressed && { opacity: 0.8 }]}
+              onPress={() => { setEditingReview(null); setShowReviewForm(true); }}>
+              <Text style={styles.writeReviewText}>＋  Write a review</Text>
+            </Pressable>
+          ) : myLatestReview ? (
+            <View style={styles.reviewGateCard}>
+              <Text style={styles.reviewGateText}>
+                You reviewed this place on {new Date(myLatestReview.createdAt).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+                You can edit your existing review or submit a new one after{' '}
+                {new Date(new Date(myLatestReview.createdAt).getTime() + 60 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}.
+              </Text>
+              <Pressable
+                style={({ pressed }) => [styles.writeReviewBtn, pressed && { opacity: 0.8 }]}
+                onPress={() => { setEditingReview(myLatestReview); setShowReviewForm(true); }}>
+                <Text style={styles.writeReviewText}>✏️  Edit your review</Text>
+              </Pressable>
+            </View>
+          ) : null}
 
           {reviews.length === 0 ? (
             <View style={styles.emptyCard}>
@@ -439,14 +458,27 @@ export default function LocationDetailScreen() {
             <View style={styles.listCard}>
               {reviews.map(r => (
                 <View key={r.id}>
-                  <ReviewCard review={r} isOwn={r.userId === currentUserId} />
+                  <ReviewCard
+                    review={r}
+                    isOwn={r.userId === currentUserId}
+                    isVerifiedVisit={!!r.userId && verifiedVisitorIds.has(r.userId)}
+                    reviewedLabel={reviewedLabel(r)}
+                    onFlag={r.userId !== currentUserId ? flagReview : undefined}
+                  />
+                  {/* Owner respond */}
                   {claim.isCurrentUserOwner && (
-                    <Pressable
-                      style={styles.respondBtn}
-                      onPress={() => setRespondTarget(r)}>
+                    <Pressable style={styles.respondBtn} onPress={() => setRespondTarget(r)}>
                       <Text style={styles.respondTxt}>
                         {r.ownerResponse ? '✏️ Edit response' : '↩ Respond as owner'}
                       </Text>
+                    </Pressable>
+                  )}
+                  {/* User edit their own review */}
+                  {r.userId === currentUserId && (
+                    <Pressable
+                      style={styles.respondBtn}
+                      onPress={() => { setEditingReview(r); setShowReviewForm(true); }}>
+                      <Text style={styles.respondTxt}>✏️ Edit your review</Text>
                     </Pressable>
                   )}
                 </View>
@@ -523,9 +555,11 @@ export default function LocationDetailScreen() {
       />
       <ReviewForm
         visible={showReviewForm}
-        onClose={() => setShowReviewForm(false)}
-        existingReview={myReview}
-        onSubmit={submitReview}
+        onClose={() => { setShowReviewForm(false); setEditingReview(null); }}
+        existingReview={editingReview}
+        onSubmit={(rating, content, photos, kept) =>
+          submitReview(rating, content, photos, kept, editingReview?.id ?? null)
+        }
       />
       <ClaimModal
         visible={showClaimModal}
@@ -617,6 +651,8 @@ function makeStyles(c: AppColors) { return StyleSheet.create({
   googleRowChevron:{ color: c.textMuted, fontSize: 20 },
   writeReviewBtn:  { backgroundColor: c.card, borderRadius: 14, padding: 14, alignItems: 'center', borderWidth: 1, borderColor: COLORS.primary + '50' },
   writeReviewText: { color: COLORS.primary, fontSize: 16, fontWeight: '600' },
+  reviewGateCard:  { backgroundColor: c.surface, borderRadius: 14, padding: 14, gap: 12, borderWidth: 1, borderColor: c.border },
+  reviewGateText:  { color: c.textSec, fontSize: 13, lineHeight: 19 },
   listCard:        { backgroundColor: c.card, borderRadius: 16, paddingHorizontal: 16, borderWidth: 1, borderColor: c.border },
   emptyCard:       { alignItems: 'center', paddingVertical: 40, gap: 8 },
   emptyEmoji:      { fontSize: 40 },

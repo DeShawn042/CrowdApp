@@ -15,6 +15,7 @@ import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import type { TimeFilter } from '@/hooks/useAdminStats';
+import { useAdminReviews } from '@/hooks/useAdminReviews';
 import type { AppColors } from '@/constants/themes';
 
 const TIME_FILTERS: { key: TimeFilter; label: string }[] = [
@@ -83,6 +84,7 @@ export default function AdminDashboard() {
   const { colors } = useTheme();
   const [filter, setFilter] = useState<TimeFilter>('week');
   const { stats, loading, reload } = useAdminStats(filter);
+  const adminReviews = useAdminReviews();
 
   // Guard: only admins
   if (!user?.isAdmin) {
@@ -226,6 +228,80 @@ export default function AdminDashboard() {
               <StatCard icon="👁️" label="Watchlist"      value={stats.totalWatchlist}    colors={colors} />
               <StatCard icon="🚗" label="Heading There"  value={stats.totalHeadingThere} colors={colors} />
             </View>
+
+            {/* ── Review Moderation ── */}
+            <SectionTitle title="🚩  Review Moderation" colors={colors} />
+
+            {/* Filter row */}
+            <View style={ss.filterRow}>
+              {(['flagged', 'newest'] as const).map(f => (
+                <Pressable
+                  key={f}
+                  style={[ss.filterBtn, { backgroundColor: colors.card, borderColor: colors.border },
+                    adminReviews.filter === f && { backgroundColor: COLORS.primary + '20', borderColor: COLORS.primary }]}
+                  onPress={() => adminReviews.setFilter(f)}>
+                  <Text style={[ss.filterText, { color: colors.textSec },
+                    adminReviews.filter === f && { color: COLORS.primary, fontWeight: '700' }]}>
+                    {f === 'flagged' ? '🚩 Most Flagged' : '🆕 Newest'}
+                  </Text>
+                </Pressable>
+              ))}
+            </View>
+
+            {adminReviews.loading ? (
+              <View style={ss.loadingBox}>
+                <ActivityIndicator color={COLORS.primary} />
+              </View>
+            ) : adminReviews.reviews.length === 0 ? (
+              <View style={[ss.card, { backgroundColor: colors.card, borderColor: colors.border, alignItems: 'center', paddingVertical: 24 }]}>
+                <Text style={{ fontSize: 32 }}>✅</Text>
+                <Text style={[ss.cardTitle, { color: colors.textMuted, marginTop: 8 }]}>No reviews to moderate</Text>
+              </View>
+            ) : (
+              adminReviews.reviews.map((r, i) => (
+                <View key={r.id} style={[ss.card, { backgroundColor: colors.card, borderColor: r.isHidden ? COLORS.packed + '60' : colors.border }]}>
+                  {/* Review header */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+                    <View style={{ flex: 1, gap: 2 }}>
+                      <Text style={[ss.cardTitle, { color: colors.text, fontSize: 14 }]}>
+                        {r.displayName ?? r.userName ?? 'Unknown'}
+                        {r.isHidden && <Text style={{ color: COLORS.packed }}> · Hidden</Text>}
+                      </Text>
+                      <Text style={{ color: colors.textMuted, fontSize: 11 }}>
+                        {r.locationId} · {new Date(r.createdAt).toLocaleDateString()}
+                      </Text>
+                    </View>
+                    {r.flagCount > 0 && (
+                      <View style={ss.flagBadge}>
+                        <Text style={ss.flagBadgeText}>🚩 {r.flagCount}</Text>
+                      </View>
+                    )}
+                    {'⭐'.repeat(r.rating)}
+                  </View>
+
+                  {/* Content */}
+                  <Text style={{ color: colors.textSec, fontSize: 13, lineHeight: 18 }} numberOfLines={3}>
+                    {r.content}
+                  </Text>
+
+                  {/* Actions */}
+                  <View style={{ flexDirection: 'row', gap: 8 }}>
+                    {r.isHidden && (
+                      <Pressable
+                        style={[ss.modBtn, { borderColor: COLORS.empty, backgroundColor: COLORS.empty + '15' }]}
+                        onPress={() => adminReviews.restoreReview(r.id)}>
+                        <Text style={[ss.modBtnText, { color: COLORS.empty }]}>✓ Restore</Text>
+                      </Pressable>
+                    )}
+                    <Pressable
+                      style={[ss.modBtn, { borderColor: COLORS.packed, backgroundColor: COLORS.packed + '15' }]}
+                      onPress={() => adminReviews.deleteReview(r.id)}>
+                      <Text style={[ss.modBtnText, { color: COLORS.packed }]}>🗑 Delete</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              ))
+            )}
           </>
         )}
       </ScrollView>
@@ -273,4 +349,9 @@ const ss = StyleSheet.create({
   listRank:    { fontSize: 13, fontWeight: '700', width: 24 },
   listName:    { fontSize: 13 },
   listCount:   { fontSize: 12, fontWeight: '600' },
+
+  flagBadge:     { backgroundColor: COLORS.packed + '20', borderRadius: 10, paddingHorizontal: 8, paddingVertical: 3, borderWidth: 1, borderColor: COLORS.packed + '50' },
+  flagBadgeText: { color: COLORS.packed, fontSize: 12, fontWeight: '700' },
+  modBtn:        { flex: 1, paddingVertical: 8, borderRadius: 10, borderWidth: 1, alignItems: 'center' },
+  modBtnText:    { fontSize: 13, fontWeight: '700' },
 });
