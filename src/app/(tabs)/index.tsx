@@ -44,7 +44,7 @@ export default function HomeScreen() {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const { destination, clearDestination, reload: reloadDestination } = useHeadingThere();
-  const { items: watchlistItems, reload: reloadWatchlist } = useWatchlist();
+  const { items: watchlistItems, removeFromWatchlist, reload: reloadWatchlist } = useWatchlist();
   const { showPrompt, onReportSubmitted, dismiss, rated } = useRateApp();
 
   useFocusEffect(useCallback(() => {
@@ -143,6 +143,7 @@ export default function HomeScreen() {
                     currentCrowd={crowd}
                     locationType={loc?.type}
                     onPress={() => handleLocationPress(item.placeId)}
+                    onRemove={removeFromWatchlist}
                   />
                 );
               })}
