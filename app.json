@@ -4,11 +4,11 @@
     "slug": "prescout",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icon.png",
     "scheme": "prescout",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
+      "icon": "./assets/icon.png",
       "bundleIdentifier": "com.prescout.app",
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Prescout uses your location to find nearby venues and calculate distances.",
@@ -18,10 +18,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#0F0F13",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
-        "monochromeImage": "./assets/images/android-icon-monochrome.png"
+        "foregroundImage": "./assets/icon.png",
+        "backgroundColor": "#0F0F13"
       },
       "package": "com.prescout.app",
       "predictiveBackGestureEnabled": false,
@@ -50,10 +48,8 @@
         "expo-splash-screen",
         {
           "backgroundColor": "#0F0F13",
-          "android": {
-            "image": "./assets/images/splash-icon.png",
-            "imageWidth": 76
-          }
+          "image": "./assets/splash.png",
+          "resizeMode": "cover"
         }
       ],
       [
