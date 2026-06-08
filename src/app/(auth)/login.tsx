@@ -29,7 +29,7 @@ export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
   const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
-  const logoWidth = width * 0.65;
+  const logoWidth = width * 0.85;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   flex: { flex: 1 },
   container: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', gap: 40, paddingVertical: 40 },
-  hero: { alignItems: 'center', paddingBottom: 8 },
+  hero: { alignItems: 'center', paddingBottom: 16 },
   logoImg: {},
   form: { gap: 16 },
   heading: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginBottom: 4 },
