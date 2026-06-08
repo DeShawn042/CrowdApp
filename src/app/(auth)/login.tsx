@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,6 +10,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,9 +19,17 @@ import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 
+const LOGO_DARK = require('../../../assets/prescout-logo-dark.png');
+const LOGO_LIGHT = require('../../../assets/prescout-logo-light.png');
+
 export default function LoginScreen() {
   const { login } = useAuth();
-  const { colors } = useTheme();
+  const { colors, preference } = useTheme();
+  const systemScheme = useColorScheme();
+  const { width } = useWindowDimensions();
+  const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
+  const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
+  const logoWidth = width * 0.65;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,9 +64,11 @@ export default function LoginScreen() {
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
-            <Text style={styles.logo}>📍</Text>
-            <Text style={[styles.appName, { color: colors.text }]}>Prescout</Text>
-            <Text style={[styles.tagline, { color: colors.textSec }]}>Know before you go.</Text>
+            <Image
+              source={logoSource}
+              style={[styles.logoImg, { width: logoWidth, height: logoWidth * 0.35 }]}
+              resizeMode="contain"
+            />
           </View>
 
           <View style={styles.form}>
@@ -120,10 +133,8 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   flex: { flex: 1 },
   container: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', gap: 40, paddingVertical: 40 },
-  hero: { alignItems: 'center', gap: 8 },
-  logo: { fontSize: 56 },
-  appName: { color: COLORS.text, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
-  tagline: { color: COLORS.textSec, fontSize: 16 },
+  hero: { alignItems: 'center' },
+  logoImg: {},
   form: { gap: 16 },
   heading: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginBottom: 4 },
   error: { color: COLORS.packed, backgroundColor: COLORS.packed + '1A', padding: 12, borderRadius: 14, fontSize: 14 },

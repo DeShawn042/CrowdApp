@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -9,6 +10,8 @@ import {
   StyleSheet,
   Text,
   TextInput,
+  useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -16,9 +19,17 @@ import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 
+const LOGO_DARK = require('../../../assets/prescout-logo-dark.png');
+const LOGO_LIGHT = require('../../../assets/prescout-logo-light.png');
+
 export default function SignupScreen() {
   const { signup } = useAuth();
-  const { colors } = useTheme();
+  const { colors, preference } = useTheme();
+  const systemScheme = useColorScheme();
+  const { width } = useWindowDimensions();
+  const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
+  const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
+  const logoWidth = width * 0.65;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -70,8 +81,11 @@ export default function SignupScreen() {
           </Pressable>
 
           <View style={styles.header}>
-            <Text style={[styles.heading, { color: colors.text }]}>Create account</Text>
-            <Text style={[styles.sub, { color: colors.textSec }]}>Start sharing crowd levels with your community.</Text>
+            <Image
+              source={logoSource}
+              style={[styles.logoImg, { width: logoWidth, height: logoWidth * 0.35 }]}
+              resizeMode="contain"
+            />
           </View>
 
           <View style={styles.form}>
@@ -150,9 +164,8 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, gap: 32 },
   backBtn: { alignSelf: 'flex-start' },
   backText: { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  header: { gap: 8 },
-  heading: { color: COLORS.text, fontSize: 24, fontWeight: '700' },
-  sub: { color: COLORS.textSec, fontSize: 14, lineHeight: 20 },
+  header: { alignItems: 'center' },
+  logoImg: {},
   form: { gap: 16 },
   error: { color: COLORS.packed, backgroundColor: COLORS.packed + '1A', padding: 12, borderRadius: 14, fontSize: 14 },
   field: { gap: 6 },
