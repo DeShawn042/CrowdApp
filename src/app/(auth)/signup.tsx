@@ -164,7 +164,7 @@ const styles = StyleSheet.create({
   container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, gap: 32 },
   backBtn: { alignSelf: 'flex-start' },
   backText: { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  header: { alignItems: 'center' },
+  header: { alignItems: 'center', paddingBottom: 8 },
   logoImg: {},
   form: { gap: 16 },
   error: { color: COLORS.packed, backgroundColor: COLORS.packed + '1A', padding: 12, borderRadius: 14, fontSize: 14 },

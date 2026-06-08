@@ -133,7 +133,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   flex: { flex: 1 },
   container: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', gap: 40, paddingVertical: 40 },
-  hero: { alignItems: 'center' },
+  hero: { alignItems: 'center', paddingBottom: 8 },
   logoImg: {},
   form: { gap: 16 },
   heading: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginBottom: 4 },
