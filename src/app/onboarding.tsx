@@ -3,18 +3,24 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Animated,
   Easing,
+  Image,
   Linking,
   Platform,
   Pressable,
   ScrollView,
   StyleSheet,
   Text,
+  useColorScheme,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import { useOnboarding } from '@/hooks/useOnboarding';
+
+const LOGO_DARK  = require('../../assets/prescout-logo-dark.png');
+const LOGO_LIGHT = require('../../assets/prescout-logo-light.png');
 import * as Location from 'expo-location';
 
 // ── Section data ─────────────────────────────────────────────────────────────
@@ -112,7 +118,12 @@ function PermissionBtn({
 // ── Main screen ───────────────────────────────────────────────────────────────
 
 export default function OnboardingScreen() {
-  const { colors } = useTheme();
+  const { colors, preference } = useTheme();
+  const systemScheme = useColorScheme();
+  const { width } = useWindowDimensions();
+  const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
+  const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
+  const logoWidth  = width * 0.85;
   const { markSeen } = useOnboarding();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
@@ -173,12 +184,11 @@ export default function OnboardingScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.logoWrap}>
-            <LogoPulse color={COLORS.primary} />
-            <Text style={styles.logoEmoji}>📍</Text>
-          </View>
-          <Text style={[styles.appName, { color: colors.text }]}>Prescout</Text>
-          <Text style={[styles.tagline, { color: colors.textSec }]}>Know before you go.</Text>
+          <Image
+            source={logoSource}
+            style={{ width: logoWidth, height: logoWidth * 0.35 }}
+            resizeMode="contain"
+          />
         </View>
 
         {/* Feature sections */}
@@ -247,12 +257,7 @@ const styles = StyleSheet.create({
   content:       { paddingHorizontal: 24, paddingTop: 16, gap: 0 },
 
   // Header
-  header:        { alignItems: 'center', paddingVertical: 40, gap: 8 },
-  logoWrap:      { width: 88, height: 88, alignItems: 'center', justifyContent: 'center', marginBottom: 4 },
-  logoGlow:      { position: 'absolute', width: 88, height: 88, borderRadius: 44 },
-  logoEmoji:     { fontSize: 52, zIndex: 1 },
-  appName:       { fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
-  tagline:       { fontSize: 16 },
+  header:        { alignItems: 'center', paddingVertical: 40 },
 
   // Sections
   section:       { paddingVertical: 36, gap: 12, borderTopWidth: 1 },
