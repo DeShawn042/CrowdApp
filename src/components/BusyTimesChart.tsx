@@ -348,7 +348,7 @@ function makeStyles(c: AppColors) {
     subtitle: { color: c.textMuted, fontSize: 11, marginBottom: 8  },
 
     chartWrapper:  { overflow: 'hidden' },
-    scrollContent: { paddingBottom: 2   },
+    scrollContent: { paddingBottom: 2, paddingRight: 20 },
 
     col:     { alignItems: 'center' },
     nowArea: { height: NOW_H, justifyContent: 'flex-end', alignItems: 'center', paddingBottom: 3 },
