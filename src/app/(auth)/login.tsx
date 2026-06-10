@@ -65,7 +65,7 @@ export default function LoginScreen() {
             <Image
               source={logoSource}
               style={styles.logoImg}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </View>
 
@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   hero: { alignSelf: 'center', paddingBottom: 20 },
   logoImg: {
     width: Dimensions.get('window').width,
-    height: 320,
+    height: 250,
     alignSelf: 'center',
   },
   form: { gap: 16 },

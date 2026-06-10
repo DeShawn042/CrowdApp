@@ -82,7 +82,7 @@ export default function SignupScreen() {
             <Image
               source={logoSource}
               style={styles.logoImg}
-              resizeMode="cover"
+              resizeMode="contain"
             />
           </View>
 
@@ -168,7 +168,7 @@ const styles = StyleSheet.create({
   header: { alignSelf: 'center' },
   logoImg: {
     width: Dimensions.get('window').width,
-    height: 320,
+    height: 250,
     alignSelf: 'center',
   },
   form: { gap: 16 },
