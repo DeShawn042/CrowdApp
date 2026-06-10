@@ -123,7 +123,7 @@ export default function OnboardingScreen() {
   const { width } = useWindowDimensions();
   const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
   const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
-  const logoWidth  = width * 0.85;
+  const logoWidth  = width * 0.95;
   const { markSeen } = useOnboarding();
   const insets = useSafeAreaInsets();
   const scrollRef = useRef<ScrollView>(null);
