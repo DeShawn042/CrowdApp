@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -11,7 +12,6 @@ import {
   Text,
   TextInput,
   useColorScheme,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,10 +26,8 @@ export default function SignupScreen() {
   const { signup } = useAuth();
   const { colors, preference } = useTheme();
   const systemScheme = useColorScheme();
-  const { width } = useWindowDimensions();
   const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
   const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
-  const logoWidth = width - 40;
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -83,11 +81,12 @@ export default function SignupScreen() {
           <View style={styles.header}>
             <Image
               source={logoSource}
-              style={[styles.logoImg, { width: logoWidth, height: logoWidth * 0.35 }]}
-              resizeMode="contain"
+              style={styles.logoImg}
+              resizeMode="cover"
             />
           </View>
 
+          <View style={styles.formWrap}>
           <View style={styles.form}>
             {error ? <Text style={[styles.error, { color: COLORS.packed, backgroundColor: COLORS.packed + '1A' }]}>{error}</Text> : null}
 
@@ -152,6 +151,7 @@ export default function SignupScreen() {
               </Pressable>
             </View>
           </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -161,11 +161,16 @@ export default function SignupScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   flex: { flex: 1 },
-  container: { flexGrow: 1, paddingHorizontal: 24, paddingTop: 24, paddingBottom: 40, gap: 32 },
-  backBtn: { alignSelf: 'flex-start' },
+  container: { flexGrow: 1, paddingTop: 24, paddingBottom: 40, gap: 32 },
+  formWrap:  { paddingHorizontal: 24 },
+  backBtn: { alignSelf: 'flex-start', paddingHorizontal: 24 },
   backText: { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  header: { alignItems: 'center', paddingBottom: 20 },
-  logoImg: {},
+  header: { alignSelf: 'center' },
+  logoImg: {
+    width: Dimensions.get('window').width,
+    height: 320,
+    alignSelf: 'center',
+  },
   form: { gap: 16 },
   error: { color: COLORS.packed, backgroundColor: COLORS.packed + '1A', padding: 12, borderRadius: 14, fontSize: 14 },
   field: { gap: 6 },
