@@ -38,7 +38,7 @@ const CATEGORIES: PlaceCategory[] = [
   { id: 'spas',           label: 'Salons & Spas',    emoji: '💆', types: ['spa', 'beauty_salon', 'hair_care'],                            color: '#D946EF' },
   { id: 'medical',        label: 'Medical',          emoji: '🏥', types: ['hospital', 'pharmacy', 'doctor', 'dentist'],                   color: '#06B6D4' },
   { id: 'parks',          label: 'Parks',            emoji: '🌳', types: ['park'],                                                        color: '#16A34A' },
-  { id: 'gas',            label: 'Gas Stations',     emoji: '⛽', types: ['gas_station'],                                                 color: '#64748B' },
+  { id: 'gas',            label: 'Gas Stations',     emoji: '⛽', types: ['gas_station'],                                                 color: '#F97316' },
   { id: 'hotels',         label: 'Hotels',           emoji: '🏨', types: ['lodging'],                                                     color: '#D97706' },
 ];
 
