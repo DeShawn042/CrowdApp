@@ -2,6 +2,8 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
+  Image,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -51,7 +53,10 @@ export default function LoginScreen() {
           contentContainerStyle={styles.container}
           keyboardShouldPersistTaps="handled">
           <View style={styles.hero}>
-            <Text style={styles.logo}>📍</Text>
+            <Image
+              source={require('../../../assets/images/logo-glow.png')}
+              style={styles.logo}
+            />
             <Text style={styles.appName}>CrowdApp</Text>
             <Text style={styles.tagline}>Know before you go.</Text>
           </View>
@@ -119,7 +124,12 @@ const styles = StyleSheet.create({
   flex: { flex: 1 },
   container: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', gap: 40, paddingVertical: 40 },
   hero: { alignItems: 'center', gap: 8 },
-  logo: { fontSize: 56 },
+  logo: {
+    width: Dimensions.get('window').width,
+    height: 250,
+    resizeMode: 'contain',
+    alignSelf: 'center',
+  },
   appName: { color: COLORS.text, fontSize: 32, fontWeight: '800', letterSpacing: -0.5 },
   tagline: { color: COLORS.textSec, fontSize: 16 },
   form: { gap: 16 },
