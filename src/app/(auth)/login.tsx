@@ -2,6 +2,7 @@ import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  Dimensions,
   Image,
   KeyboardAvoidingView,
   Platform,
@@ -11,7 +12,6 @@ import {
   Text,
   TextInput,
   useColorScheme,
-  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -26,10 +26,8 @@ export default function LoginScreen() {
   const { login } = useAuth();
   const { colors, preference } = useTheme();
   const systemScheme = useColorScheme();
-  const { width } = useWindowDimensions();
   const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
   const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
-  const logoWidth = width;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
@@ -66,11 +64,12 @@ export default function LoginScreen() {
           <View style={styles.hero}>
             <Image
               source={logoSource}
-              style={[styles.logoImg, { width: logoWidth, height: logoWidth * 0.35 }]}
+              style={styles.logoImg}
               resizeMode="contain"
             />
           </View>
 
+          <View style={styles.formWrap}>
           <View style={styles.form}>
             <Text style={[styles.heading, { color: colors.text }]}>Welcome back</Text>
 
@@ -123,6 +122,7 @@ export default function LoginScreen() {
               </Pressable>
             </View>
           </View>
+          </View>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -132,9 +132,14 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: COLORS.bg },
   flex: { flex: 1 },
-  container: { flexGrow: 1, paddingHorizontal: 24, justifyContent: 'center', gap: 40, paddingVertical: 40 },
-  hero: { alignItems: 'center', paddingBottom: 20, marginHorizontal: -24 },
-  logoImg: {},
+  container: { flexGrow: 1, justifyContent: 'center', gap: 40, paddingVertical: 40 },
+  formWrap:  { paddingHorizontal: 24 },
+  hero: { alignSelf: 'center', paddingBottom: 20 },
+  logoImg: {
+    width: Dimensions.get('window').width,
+    height: 250,
+    alignSelf: 'center',
+  },
   form: { gap: 16 },
   heading: { color: COLORS.text, fontSize: 24, fontWeight: '700', marginBottom: 4 },
   error: { color: COLORS.packed, backgroundColor: COLORS.packed + '1A', padding: 12, borderRadius: 14, fontSize: 14 },
