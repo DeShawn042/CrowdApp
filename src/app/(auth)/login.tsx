@@ -29,7 +29,7 @@ export default function LoginScreen() {
   const { width } = useWindowDimensions();
   const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
   const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
-  const logoWidth = width - 40;
+  const logoWidth = width * 0.95;
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
