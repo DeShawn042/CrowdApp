@@ -26,8 +26,7 @@ import QuickReportsSection from '@/components/QuickReportsSection';
 import QuickReportSummaries from '@/components/QuickReportSummaries';
 import Toast from '@/components/Toast';
 import WatchlistSheet from '@/components/WatchlistSheet';
-import { openMapSheet } from '@/hooks/useMapLink';
-import type { MapOption } from '@/hooks/useMapLink';
+import { useMapOpener } from '@/hooks/useMapOpener';
 import { useQuickReports } from '@/hooks/useQuickReports';
 import { useHeadingThere } from '@/hooks/useHeadingThere';
 import { useWatchlist } from '@/hooks/useWatchlist';
@@ -97,16 +96,16 @@ export default function LocationDetailScreen() {
   const { destination, setHeadingThere, clearDestination, isHeadingThere } = useHeadingThere();
   const { addToWatchlist, removeFromWatchlist, isWatching } = useWatchlist();
 
-  const [showReviewForm,     setShowReviewForm]     = useState(false);
-  const [editingReview,      setEditingReview]      = useState<Review | null>(null);
-  const [deletingReviewId,   setDeletingReviewId]   = useState<string | null>(null);
-  const [showToast,          setShowToast]          = useState(false);
-  const [showWatchlist,   setShowWatchlist]   = useState(false);
-  const [showClaimModal,  setShowClaimModal]  = useState(false);
-  const [respondTarget,   setRespondTarget]   = useState<Review | null>(null);
-  const [mapOptions,      setMapOptions]      = useState<MapOption[]>([]);
-  const [showMapChooser,  setShowMapChooser]  = useState(false);
-  const [activeQR,        setActiveQR]        = useState<{ type: ReportType; config: QuickReportConfig } | null>(null);
+  const mapOpener = useMapOpener();
+
+  const [showReviewForm,   setShowReviewForm]   = useState(false);
+  const [editingReview,    setEditingReview]    = useState<Review | null>(null);
+  const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
+  const [showToast,        setShowToast]        = useState(false);
+  const [showWatchlist,    setShowWatchlist]    = useState(false);
+  const [showClaimModal,   setShowClaimModal]   = useState(false);
+  const [respondTarget,    setRespondTarget]    = useState<Review | null>(null);
+  const [activeQR,         setActiveQR]         = useState<{ type: ReportType; config: QuickReportConfig } | null>(null);
 
   const currentHour = new Date().getHours();
   const qrConfigs = location ? getQuickReportConfigs(location.type) : null;
@@ -264,17 +263,7 @@ export default function LocationDetailScreen() {
               </View>
               <Text style={styles.name} numberOfLines={2}>{location.name}</Text>
               <Pressable
-                onPress={() =>
-                  openMapSheet(
-                    location.coordinates.lat,
-                    location.coordinates.lng,
-                    location.name,
-                    (opts, _fallback) => {
-                      setMapOptions(opts);
-                      setShowMapChooser(true);
-                    },
-                  )
-                }
+                onPress={() => mapOpener.open(location.coordinates.lat, location.coordinates.lng, location.name)}
                 hitSlop={8}>
                 <Text style={styles.addressLink}>📍 {location.address}</Text>
               </Pressable>
@@ -551,11 +540,7 @@ export default function LocationDetailScreen() {
       />
 
       {/* Modals */}
-      <MapChooserModal
-        visible={showMapChooser}
-        options={mapOptions}
-        onClose={() => setShowMapChooser(false)}
-      />
+      <MapChooserModal {...mapOpener.sheetProps} />
       <QuickReportSheet
         visible={!!activeQR}
         config={activeQR?.config ?? null}

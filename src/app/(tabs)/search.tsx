@@ -66,7 +66,7 @@ export default function SearchScreen() {
       setQuery(params.q);
       setSelectedCategory(null);
     }
-    setTimeout(() => inputRef.current?.focus(), 100);
+    if (params.q) setTimeout(() => inputRef.current?.focus(), 100);
   }, [params.q]);
 
   // Debounced text search — clears category selection while typing

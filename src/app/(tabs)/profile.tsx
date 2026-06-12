@@ -22,6 +22,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useMyReviews, type MyReview } from '@/hooks/useMyReviews';
 import { useImpactStats, type ImpactStats } from '@/hooks/useImpactStats';
+import { useMapOpener } from '@/hooks/useMapOpener';
 import { formatDate } from '@/utils/crowdUtils';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -37,6 +38,9 @@ export default function ProfileScreen() {
   const { items: watchlistItems, removeFromWatchlist, renewWatchlistItem, reload: reloadWatchlist } = useWatchlist();
   const { reviews: myReviews, deleteMyReview, refresh: reloadMyReviews } = useMyReviews();
   const { stats, refresh: reloadStats } = useImpactStats();
+
+  const mapOpener = useMapOpener();
+  const [mapDropdownOpen, setMapDropdownOpen] = useState(false);
 
   const [modal, setModal] = useState<'logout' | 'delete' | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
@@ -154,6 +158,58 @@ export default function ProfileScreen() {
               </Pressable>
             ))}
           </View>
+
+          {/* Default Maps App */}
+          {mapOpener.installedApps.length > 1 && (
+            <View style={styles.mapPrefCard}>
+              <Pressable
+                style={({ pressed }) => [styles.mapPrefRow, pressed && { opacity: 0.75 }]}
+                onPress={() => setMapDropdownOpen(v => !v)}>
+                <Text style={styles.mapPrefIcon}>🗺️</Text>
+                <View style={styles.mapPrefLabelCol}>
+                  <Text style={[styles.mapPrefLabel, { color: colors.text }]}>Default Maps App</Text>
+                  <Text style={[styles.mapPrefValue, { color: COLORS.primary }]}>
+                    {mapOpener.defaultApp ?? 'Ask every time'}
+                  </Text>
+                </View>
+                <Text style={[styles.mapPrefChevron, { color: colors.textMuted }, mapDropdownOpen && styles.mapPrefChevronOpen]}>›</Text>
+              </Pressable>
+
+              {mapDropdownOpen && (
+                <View style={[styles.mapDropdown, { borderTopColor: colors.border }]}>
+                  {mapOpener.installedApps.map((app, i) => {
+                    const isSelected = mapOpener.defaultApp === app.label;
+                    return (
+                      <React.Fragment key={app.label}>
+                        {i > 0 && <View style={[styles.mapDropdownDivider, { backgroundColor: colors.border }]} />}
+                        <Pressable
+                          style={({ pressed }) => [styles.mapDropdownItem, pressed && { opacity: 0.7 }]}
+                          onPress={async () => {
+                            await mapOpener.setDefaultDirect(app.label);
+                            setMapDropdownOpen(false);
+                          }}>
+                          <Text style={styles.mapDropdownIcon}>{app.icon}</Text>
+                          <Text style={[styles.mapDropdownLabel, { color: colors.text }]}>{app.label}</Text>
+                          {isSelected && <Text style={[styles.mapDropdownCheck, { color: COLORS.primary }]}>✓</Text>}
+                        </Pressable>
+                      </React.Fragment>
+                    );
+                  })}
+                  <View style={[styles.mapDropdownDivider, { backgroundColor: colors.border }]} />
+                  <Pressable
+                    style={({ pressed }) => [styles.mapDropdownItem, pressed && { opacity: 0.7 }]}
+                    onPress={async () => {
+                      await mapOpener.clearDefault();
+                      setMapDropdownOpen(false);
+                    }}>
+                    <Text style={styles.mapDropdownIcon}>❓</Text>
+                    <Text style={[styles.mapDropdownLabel, { color: colors.textSec }]}>Ask every time</Text>
+                    {!mapOpener.defaultApp && <Text style={[styles.mapDropdownCheck, { color: COLORS.primary }]}>✓</Text>}
+                  </Pressable>
+                </View>
+              )}
+            </View>
+          )}
         </View>
 
         {/* Watchlist */}
@@ -445,6 +501,20 @@ function makeStyles(c: AppColors) {
     themeLabel:       { color: c.textSec, fontSize: 12, fontWeight: '600' },
     themeLabelActive: { color: COLORS.primary },
     themeCheck:       { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
+    mapPrefCard:      { backgroundColor: c.card, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
+    mapPrefRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
+    mapPrefIcon:      { fontSize: 20 },
+    mapPrefLabelCol:  { flex: 1, gap: 2 },
+    mapPrefLabel:     { fontSize: 14, fontWeight: '600' },
+    mapPrefValue:     { fontSize: 12, fontWeight: '500' },
+    mapPrefChevron:   { fontSize: 20, fontWeight: '500', transform: [{ rotate: '90deg' }] },
+    mapPrefChevronOpen: { transform: [{ rotate: '-90deg' }] },
+    mapDropdown:      { borderTopWidth: 1 },
+    mapDropdownItem:  { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 13, gap: 12 },
+    mapDropdownDivider: { height: 1, marginLeft: 48 },
+    mapDropdownIcon:  { fontSize: 18, width: 24, textAlign: 'center' },
+    mapDropdownLabel: { flex: 1, fontSize: 15, fontWeight: '500' },
+    mapDropdownCheck: { fontSize: 16, fontWeight: '700' },
     linkList:         { backgroundColor: c.card, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
     linkRow:          { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
     linkIcon:         { fontSize: 18 },
