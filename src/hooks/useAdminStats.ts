@@ -24,6 +24,7 @@ export interface AdminStats {
   // Locations
   topReportedLocations: { place_id: string; name: string; count: number }[];
   topFavoritedLocations: { location_id: string; count: number }[];
+  reportsByCity: Record<string, number>;
 
   // Engagement
   totalReviews:    number;
@@ -53,11 +54,20 @@ const EMPTY: AdminStats = {
   totalUsers: 0, newUsersThisWeek: 0, newUsersThisMonth: 0, activeUsers: 0,
   totalReports: 0, reportsToday: 0, reportsThisWeek: 0, reportsThisMonth: 0,
   reportsByLevel: {}, quickReportsByType: {}, totalQuickReports: 0,
-  topReportedLocations: [], topFavoritedLocations: [],
+  topReportedLocations: [], topFavoritedLocations: [], reportsByCity: {},
   totalReviews: 0, totalFavorites: 0, totalWatchlist: 0, totalHeadingThere: 0,
 };
 
-export function useAdminStats(filter: TimeFilter) {
+function extractCity(address: string): string {
+  const parts = address.split(',').map(p => p.trim());
+  return parts[1] ?? parts[0] ?? 'Unknown';
+}
+
+export function useAdminStats(
+  filter: TimeFilter,
+  getLocationName?: (id: string) => string | undefined,
+  getLocationAddress?: (id: string) => string | undefined,
+) {
   const [stats,   setStats]   = useState<AdminStats>(EMPTY);
   const [loading, setLoading] = useState(true);
 
@@ -142,7 +152,19 @@ export function useAdminStats(filter: TimeFilter) {
     const topReportedLocations = Object.entries(locationCounts)
       .sort((a, b) => b[1] - a[1])
       .slice(0, 5)
-      .map(([place_id, count]) => ({ place_id, name: place_id, count }));
+      .map(([place_id, count]) => ({
+        place_id,
+        name: getLocationName?.(place_id) ?? 'Unknown Location',
+        count,
+      }));
+
+    // City breakdown from all location counts
+    const reportsByCity: Record<string, number> = {};
+    for (const [place_id, count] of Object.entries(locationCounts)) {
+      const address = getLocationAddress?.(place_id);
+      const city = address ? extractCity(address) : 'Unknown';
+      reportsByCity[city] = (reportsByCity[city] ?? 0) + count;
+    }
 
     // Quick report type breakdown
     const quickReportsByType: Record<string, number> = {};
@@ -164,6 +186,7 @@ export function useAdminStats(filter: TimeFilter) {
       quickReportsByType,
       topReportedLocations,
       topFavoritedLocations: [],
+      reportsByCity,
       totalReviews:          totalReviews ?? 0,
       totalFavorites:        totalFavorites ?? 0,
       totalWatchlist:        totalWatchlist ?? 0,
@@ -172,7 +195,7 @@ export function useAdminStats(filter: TimeFilter) {
     setLoading(false);
   }, [filter]);
 
-  useEffect(() => { load(); }, [load]);
+  useEffect(() => { load(); }, [load, getLocationName, getLocationAddress]);
 
   return { stats, loading, reload: load };
 }

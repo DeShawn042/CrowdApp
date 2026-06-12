@@ -16,6 +16,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useAdminStats } from '@/hooks/useAdminStats';
 import type { TimeFilter } from '@/hooks/useAdminStats';
 import { useAdminReviews } from '@/hooks/useAdminReviews';
+import { useAppContext } from '@/context/AppContext';
 import type { AppColors } from '@/constants/themes';
 
 const TIME_FILTERS: { key: TimeFilter; label: string }[] = [
@@ -82,8 +83,13 @@ function Card({ children, colors }: { children: React.ReactNode; colors: AppColo
 export default function AdminDashboard() {
   const { user } = useAuth();
   const { colors } = useTheme();
+  const { getLocationById } = useAppContext();
   const [filter, setFilter] = useState<TimeFilter>('week');
-  const { stats, loading, reload } = useAdminStats(filter);
+  const { stats, loading, reload } = useAdminStats(
+    filter,
+    (id) => getLocationById(id)?.name,
+    (id) => getLocationById(id)?.address,
+  );
   const adminReviews = useAdminReviews();
 
   // Guard: only admins
@@ -188,11 +194,30 @@ export default function AdminDashboard() {
                   <View key={loc.place_id} style={[ss.listRow, i > 0 && { borderTopWidth: 1, borderTopColor: colors.border }]}>
                     <Text style={[ss.listRank, { color: colors.textMuted }]}>#{i + 1}</Text>
                     <Text style={[ss.listName, { color: colors.textSec, flex: 1 }]} numberOfLines={1}>
-                      {loc.name.length > 20 ? loc.place_id : loc.name}
+                      {loc.name}
                     </Text>
                     <Text style={[ss.listCount, { color: COLORS.primary }]}>{loc.count} reports</Text>
                   </View>
                 ))}
+              </Card>
+            )}
+
+            {/* ── Reports by City ── */}
+            {Object.keys(stats.reportsByCity).length > 0 && (
+              <Card colors={colors}>
+                <Text style={[ss.cardTitle, { color: colors.text }]}>Reports by City</Text>
+                {Object.entries(stats.reportsByCity)
+                  .sort((a, b) => b[1] - a[1])
+                  .slice(0, 8)
+                  .map(([city, count]) => (
+                    <BarRow
+                      key={city}
+                      label={city}
+                      count={count}
+                      total={stats.totalReports}
+                      colors={colors}
+                    />
+                  ))}
               </Card>
             )}
 

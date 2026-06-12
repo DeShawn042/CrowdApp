@@ -1,6 +1,6 @@
 import { router, useLocalSearchParams } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, Pressable, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
+import { ActivityIndicator, Alert, Pressable, RefreshControl, ScrollView, Share, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import BusyTimesChart from '@/components/BusyTimesChart';
 import ClaimModal from '@/components/ClaimModal';
@@ -18,7 +18,7 @@ import { useBusinessClaim } from '@/hooks/useBusinessClaim';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import { useReviews } from '@/hooks/useReviews';
 import { currentUserId } from '@/lib/supabase';
-import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS, getCrowdDisplay } from '@/utils/crowdUtils';
+import { CROWD_BG_COLORS, CROWD_COLORS, CROWD_LABELS, getCrowdDisplay, timeAgo } from '@/utils/crowdUtils';
 import { fetchPlaceDetails } from '@/utils/googlePlaces';
 import BottomNav from '@/components/BottomNav';
 import MapChooserModal from '@/components/MapChooserModal';
@@ -42,7 +42,7 @@ export default function LocationDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const {
     getLocationById, getReportsForLocation, savedLocationIds,
-    toggleSaved, registerLocation, userLocation,
+    toggleSaved, registerLocation, userLocation, refreshData, refreshLoading,
   } = useAppContext();
 
   // ── Location resolution ─────────────────────────────────────
@@ -238,7 +238,11 @@ export default function LocationDetailScreen() {
         </View>
       </View>
 
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+        refreshControl={<RefreshControl refreshing={refreshLoading} onRefresh={refreshData} tintColor={COLORS.primary} />}>
         {/* Location info */}
         <View style={styles.infoSection}>
           <View style={styles.nameRow}>
@@ -310,6 +314,9 @@ export default function LocationDetailScreen() {
                   ? `${crowdDisplay.reportCount} ${crowdDisplay.reportCount === 1 ? 'report' : 'reports'}`
                   : 'Based on historical data'}
               </Text>
+              {crowdDisplay.source === 'live' && reports[0]?.timestamp && (
+                <Text style={styles.lastUpdated}>Updated {timeAgo(reports[0].timestamp)}</Text>
+              )}
             </View>
             <View style={styles.crowdLevelRow}>
               <View style={[styles.crowdDot, { backgroundColor: crowdColor }]} />
@@ -651,6 +658,7 @@ function makeStyles(c: AppColors) { return StyleSheet.create({
   livePulse:       { width: 9, height: 9, borderRadius: 5, backgroundColor: COLORS.empty },
   crowdTitle:      { color: c.text, fontSize: 16, fontWeight: '700' },
   reportCount:     { color: c.textMuted, fontSize: 12 },
+  lastUpdated:     { color: c.textMuted, fontSize: 11, marginTop: -4 },
   crowdLevelRow:   { flexDirection: 'row', alignItems: 'center', gap: 10 },
   crowdDot:        { width: 16, height: 16, borderRadius: 8 },
   crowdLevelText:  { fontSize: 28, fontWeight: '700' },

@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -48,7 +49,7 @@ export default function SearchScreen() {
   const params = useLocalSearchParams<{ q?: string }>();
   const { colors } = useTheme();
   const styles = makeStyles(colors);
-  const { locations, userLocation, addRecentLocation, registerLocation } = useAppContext();
+  const { locations, userLocation, addRecentLocation, registerLocation, refreshData, refreshLoading } = useAppContext();
 
   const [query,             setQuery]             = useState(params.q ?? '');
   const [crowdFilter,       setCrowdFilter]       = useState<'all' | 'empty' | 'light' | 'moderate' | 'packed'>('all');
@@ -144,7 +145,8 @@ export default function SearchScreen() {
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
-        keyboardShouldPersistTaps="handled">
+        keyboardShouldPersistTaps="handled"
+        refreshControl={<RefreshControl refreshing={refreshLoading} onRefresh={refreshData} tintColor={COLORS.primary} />}>
 
         {isBrowseMode ? (
           /* ── Category grid ─────────────────────────────────── */

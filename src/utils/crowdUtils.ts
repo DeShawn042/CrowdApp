@@ -79,16 +79,29 @@ export interface CrowdDisplay {
 }
 
 /**
+ * Dynamically compute open/closed using current time + openHour/closeHour.
+ * Falls back to the cached openNow boolean when hours are unavailable.
+ */
+export function computeIsOpenNow(openHour?: number, closeHour?: number, fallback?: boolean): boolean {
+  if (openHour == null || closeHour == null) return fallback !== false;
+  const h = new Date().getHours();
+  if (closeHour <= 23) return h >= openHour && h < closeHour;
+  // Wraps past midnight (closeHour > 23, e.g. 26 = 2 AM next day)
+  return h >= openHour || h < (closeHour - 24);
+}
+
+/**
  * Three-tier crowd data priority:
  *  1. Live   — active Supabase reports in the last 60 min
- *  2. Typical — type-based estimate when place is open (Google confirmed or unknown)
+ *  2. Typical — type-based estimate when place is open (computed from current time)
  *  3. Closed / None — no meaningful data to show
  */
 export function getCrowdDisplay(location: Location, activeReports: Report[]): CrowdDisplay {
   if (activeReports.length > 0) {
     return { source: 'live', level: location.currentCrowd, reportCount: activeReports.length };
   }
-  if (location.openNow === false) {
+  const isOpen = computeIsOpenNow(location.openHour, location.closeHour, location.openNow);
+  if (!isOpen) {
     return { source: 'closed' };
   }
   if (location.type === 'other') {

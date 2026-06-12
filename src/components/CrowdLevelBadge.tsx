@@ -2,6 +2,7 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { CrowdLevel } from '@/data/mockData';
 import { CrowdSource, CROWD_BG_COLORS, CROWD_COLORS, CROWD_EMOJIS, CROWD_LABELS } from '@/utils/crowdUtils';
+import { useTheme } from '@/context/ThemeContext';
 
 interface Props {
   level?: CrowdLevel;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default function CrowdLevelBadge({ level, size = 'md', showEmoji = true, source }: Props) {
+  const { colors } = useTheme();
   const textSize = size === 'sm' ? 11 : size === 'lg' ? 15 : 13;
   const paddingH = size === 'sm' ? 8  : size === 'lg' ? 16 : 12;
   const paddingV = size === 'sm' ? 3  : size === 'lg' ? 8  : 5;
@@ -20,15 +22,15 @@ export default function CrowdLevelBadge({ level, size = 'md', showEmoji = true, 
   // ── No-data states ───────────────────────────────────────────
   if (source === 'closed') {
     return (
-      <View style={[styles.badge, styles.mutedBadge, { paddingHorizontal: paddingH, paddingVertical: paddingV, borderRadius: radius }]}>
-        <Text style={[styles.mutedLabel, { fontSize: textSize }]}>Closed</Text>
+      <View style={[styles.badge, { backgroundColor: colors.surface, borderColor: colors.border, paddingHorizontal: paddingH, paddingVertical: paddingV, borderRadius: radius }]}>
+        <Text style={[styles.mutedLabel, { fontSize: textSize, color: colors.textMuted }]}>Closed</Text>
       </View>
     );
   }
   if (source === 'none') {
     return (
-      <View style={[styles.badge, styles.mutedBadge, { paddingHorizontal: paddingH, paddingVertical: paddingV, borderRadius: radius }]}>
-        <Text style={[styles.mutedLabel, { fontSize: textSize }]}>No data yet</Text>
+      <View style={[styles.badge, { backgroundColor: colors.surface, borderColor: colors.border, paddingHorizontal: paddingH, paddingVertical: paddingV, borderRadius: radius }]}>
+        <Text style={[styles.mutedLabel, { fontSize: textSize, color: colors.textMuted }]}>No data yet</Text>
       </View>
     );
   }
@@ -67,8 +69,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     alignSelf: 'flex-start',
   },
-  mutedBadge:   { backgroundColor: '#1F2937', borderColor: '#374151' },
-  mutedLabel:   { color: '#6B7280', fontWeight: '500' },
+  mutedLabel:   { fontWeight: '500' },
   liveDot:      { backgroundColor: '#22C55E' },
   typicalTilde: { fontWeight: '700', lineHeight: 16 },
   dot:          {},

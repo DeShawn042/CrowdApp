@@ -1,5 +1,5 @@
 import * as ExpoLocation from 'expo-location';
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { CrowdLevel, Location, Report } from '@/data/mockData';
 import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
@@ -26,6 +26,18 @@ interface AppContextValue {
   addRecentLocation: (id: string) => void;
   /** Merge a location into the shared store so the detail screen can find it. */
   registerLocation: (location: Location) => void;
+  /** Manual pull-to-refresh — refreshes reports, location, and nearby places. */
+  refreshData: () => Promise<void>;
+  refreshLoading: boolean;
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 6371;
+  const dLat = (lat2 - lat1) * Math.PI / 180;
+  const dLng = (lng2 - lng1) * Math.PI / 180;
+  const a = Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) * Math.sin(dLng / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 const AppContext = createContext<AppContextValue | null>(null);
@@ -91,6 +103,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [myReports,         setMyReports]         = useState<Report[]>([]);
   const [savedLocationIds,  setSavedLocationIds]  = useState<string[]>([]);
   const [recentLocationIds, setRecentLocationIds] = useState<string[]>([]);
+  const [refreshLoading,    setRefreshLoading]    = useState(false);
+  const lastLocationRef = useRef<UserLocation | null>(null);
 
   // ── Loaders ────────────────────────────────────────────────
 
@@ -147,6 +161,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     setSavedLocationIds((data ?? []).map((f: any) => f.location_id));
   }, []);
 
+  // ── refreshData ────────────────────────────────────────────
+
+  const refreshData = useCallback(async () => {
+    setRefreshLoading(true);
+    try {
+      // Refresh reports and user data
+      await loadRecentReports();
+      if (userId) await Promise.all([loadMyReports(userId), loadFavorites(userId)]);
+
+      // Check for significant location change → re-fetch nearby places
+      const { status } = await ExpoLocation.getForegroundPermissionsAsync();
+      if (status === 'granted') {
+        const pos = await ExpoLocation.getCurrentPositionAsync({ accuracy: ExpoLocation.Accuracy.Balanced });
+        const { latitude: lat, longitude: lng } = pos.coords;
+        const prev = lastLocationRef.current;
+        if (!prev || haversineKm(prev.lat, prev.lng, lat, lng) > 0.5) {
+          lastLocationRef.current = { lat, lng };
+          setUserLocation({ lat, lng });
+          setLocationsLoading(true);
+          const places = await searchNearby(lat, lng, 3000);
+          if (places.length > 0) setLocations(places);
+          setLocationsLoading(false);
+        }
+      }
+    } catch (err) {
+      console.warn('refreshData:', err);
+    } finally {
+      setRefreshLoading(false);
+    }
+  }, [userId, loadRecentReports, loadMyReports, loadFavorites]);
+
   // ── Effects ────────────────────────────────────────────────
 
   // On mount: get user location → fetch nearby places → load reports
@@ -160,6 +205,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             accuracy: ExpoLocation.Accuracy.Balanced,
           });
           const { latitude: lat, longitude: lng } = pos.coords;
+          lastLocationRef.current = { lat, lng };
           setUserLocation({ lat, lng });
 
           const places = await searchNearby(lat, lng, 3000);
@@ -170,10 +216,48 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       } finally {
         setLocationsLoading(false);
       }
-      // Always update crowd levels from Supabase (works for whatever locations are set)
       await loadRecentReports();
     }
     init();
+  }, [loadRecentReports]);
+
+  // Auto-refresh reports every 5 minutes
+  useEffect(() => {
+    const id = setInterval(loadRecentReports, 5 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [loadRecentReports]);
+
+  // Watch for significant location changes (>500 m) and re-fetch nearby places
+  useEffect(() => {
+    let sub: ExpoLocation.LocationSubscription | null = null;
+
+    async function startWatching() {
+      const { status } = await ExpoLocation.getForegroundPermissionsAsync();
+      if (status !== 'granted') return;
+      sub = await ExpoLocation.watchPositionAsync(
+        { accuracy: ExpoLocation.Accuracy.Balanced, timeInterval: 60_000, distanceInterval: 500 },
+        async (pos) => {
+          const { latitude: lat, longitude: lng } = pos.coords;
+          const prev = lastLocationRef.current;
+          if (prev && haversineKm(prev.lat, prev.lng, lat, lng) < 0.5) return;
+          lastLocationRef.current = { lat, lng };
+          setUserLocation({ lat, lng });
+          setLocationsLoading(true);
+          try {
+            const places = await searchNearby(lat, lng, 3000);
+            if (places.length > 0) setLocations(places);
+          } catch (err) {
+            console.warn('watchPosition refresh:', err);
+          } finally {
+            setLocationsLoading(false);
+          }
+          await loadRecentReports();
+        },
+      );
+    }
+
+    startWatching();
+    return () => { sub?.remove(); };
   }, [loadRecentReports]);
 
   // User-specific data — (re)load whenever the logged-in user changes
@@ -322,6 +406,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       savedLocationIds, recentLocationIds,
       getLocationById, getReportsForLocation,
       submitReport, toggleSaved, addRecentLocation, registerLocation,
+      refreshData, refreshLoading,
     }}>
       {children}
     </AppContext.Provider>

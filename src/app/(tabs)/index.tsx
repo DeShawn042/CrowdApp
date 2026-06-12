@@ -3,6 +3,7 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
@@ -39,7 +40,7 @@ function getGreeting() {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport, getLocationById, getReportsForLocation, toggleSaved } = useAppContext();
+  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport, getLocationById, getReportsForLocation, toggleSaved, refreshData, refreshLoading } = useAppContext();
   const [removingFav, setRemovingFav] = useState<{ id: string; name: string } | null>(null);
 
   const { trending, loading: trendingLoading } = useTrending(locations);
@@ -96,6 +97,7 @@ export default function HomeScreen() {
       <ScrollView
         style={styles.scroll}
         contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshLoading} onRefresh={refreshData} tintColor={COLORS.primary} />}
         showsVerticalScrollIndicator={false}>
 
         {/* Header */}
