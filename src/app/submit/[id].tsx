@@ -188,10 +188,12 @@ export default function SubmitReportScreen() {
             ) : isSameAsLast ? (
               <Text style={styles.submitBtnText}>Choose a different level to report</Text>
             ) : selected ? (
-              <>
-                <CrowdLevelBadge level={selected} size="sm" showEmoji={false} />
+              <View style={styles.submitBtnInner}>
+                <View style={styles.submitBtnBadge}>
+                  <CrowdLevelBadge level={selected} size="sm" showEmoji={false} />
+                </View>
                 <Text style={styles.submitBtnText}>Submit: {CROWD_LABELS[selected]}</Text>
-              </>
+              </View>
             ) : (
               <Text style={styles.submitBtnText}>Select a crowd level</Text>
             )}
@@ -235,9 +237,11 @@ function makeStyles(c: AppColors) {
   charCount:          { color: c.textMuted, fontSize: 12, textAlign: 'right' },
   errorBanner:        { backgroundColor: COLORS.packed + '20', borderRadius: 14, padding: 14, borderWidth: 1, borderColor: COLORS.packed },
   errorText:          { color: COLORS.packed, fontSize: 14 },
-  submitBtn:          { backgroundColor: c.textMuted, borderRadius: 16, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 },
+  submitBtn:          { backgroundColor: c.textMuted, borderRadius: 16, padding: 16, alignItems: 'center', justifyContent: 'center' },
   submitBtnDisabled:  { opacity: 0.5 },
   submitBtnPressed:   { opacity: 0.75, transform: [{ scale: 0.98 }] },
-  submitBtnText:      { color: c.text, fontSize: 16, fontWeight: '600', textAlign: 'center', flex: 1 },
+  submitBtnInner:     { width: '100%', alignItems: 'center', justifyContent: 'center' },
+  submitBtnBadge:     { position: 'absolute', left: 0 },
+  submitBtnText:      { color: c.text, fontSize: 16, fontWeight: '600', textAlign: 'center' },
   });
 }
