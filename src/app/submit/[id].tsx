@@ -238,6 +238,6 @@ function makeStyles(c: AppColors) {
   submitBtn:          { backgroundColor: c.textMuted, borderRadius: 16, padding: 16, alignItems: 'center', flexDirection: 'row', justifyContent: 'center', gap: 10 },
   submitBtnDisabled:  { opacity: 0.5 },
   submitBtnPressed:   { opacity: 0.75, transform: [{ scale: 0.98 }] },
-  submitBtnText:      { color: c.text, fontSize: 16, fontWeight: '600' },
+  submitBtnText:      { color: c.text, fontSize: 16, fontWeight: '600', textAlign: 'center', flex: 1 },
   });
 }
