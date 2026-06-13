@@ -73,7 +73,7 @@ export default function HomeScreen() {
   }, []);
 
   const favoriteLocations = useMemo<TrendingLocation[]>(
-    () => savedLocationIds.slice(0, 6).flatMap(id => {
+    () => savedLocationIds.flatMap(id => {
       const loc = locations.find(l => l.id === id);
       return loc ? [{ ...loc, recentReports: 0 }] : [];
     }),

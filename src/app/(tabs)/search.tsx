@@ -18,7 +18,7 @@ import type { AppColors } from '@/constants/themes';
 import { useAppContext } from '@/context/AppContext';
 import { Location } from '@/data/mockData';
 import { searchNearby, searchText } from '@/utils/googlePlaces';
-import { CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
+import { CROWD_COLORS, CROWD_LABELS, computeIsOpenNow } from '@/utils/crowdUtils';
 
 interface PlaceCategory {
   id: string;
@@ -110,9 +110,15 @@ export default function SearchScreen() {
   const baseLocations = isTextMode ? textResults : isCategoryMode ? categoryResults : locations;
   const isLoading     = isTextMode ? textSearching : isCategoryMode ? categorySearching : false;
 
-  const results = useMemo(() => (
-    baseLocations.filter(l => crowdFilter === 'all' || l.currentCrowd === crowdFilter)
-  ), [baseLocations, crowdFilter]);
+  const results = useMemo(() => {
+    const filtered = baseLocations.filter(l => crowdFilter === 'all' || l.currentCrowd === crowdFilter);
+    // Open locations first, closed to bottom
+    return [...filtered].sort((a, b) => {
+      const aOpen = computeIsOpenNow(a.openHour, a.closeHour, a.openNow) ? 0 : 1;
+      const bOpen = computeIsOpenNow(b.openHour, b.closeHour, b.openNow) ? 0 : 1;
+      return aOpen - bOpen;
+    });
+  }, [baseLocations, crowdFilter]);
 
   function handlePress(loc: Location) {
     registerLocation(loc);       // ensure detail screen can find it

@@ -26,9 +26,9 @@ import { useMapOpener } from '@/hooks/useMapOpener';
 import { formatDate } from '@/utils/crowdUtils';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
-const SUPPORT_EMAIL = 'support@rookstechnologies.com';
-const TERMS_URL = 'https://rookstechnologies.com/terms';
-const PRIVACY_URL = 'https://rookstechnologies.com/privacy';
+const SUPPORT_EMAIL = 'hello@prescout.app';
+const TERMS_URL = 'https://prescout.app/terms';
+const PRIVACY_URL = 'https://prescout.app/privacy';
 
 export default function ProfileScreen() {
   const { colors, preference, setPreference } = useTheme();
