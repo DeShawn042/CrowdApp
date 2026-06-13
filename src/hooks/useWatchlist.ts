@@ -6,6 +6,7 @@ import { currentUserId, isSupabaseConfigured, supabase } from '@/lib/supabase';
 const isExpoGo = Constants.appOwnership === 'expo';
 import type { CrowdLevel } from '@/data/mockData';
 import { CROWD_LABELS } from '@/utils/crowdUtils';
+import { WATCHLIST_CATEGORY_ID } from './useNotifications';
 
 export type AlertLevel = CrowdLevel; // 'empty' | 'light' | 'moderate' | 'packed'
 
@@ -173,7 +174,8 @@ async function sendWatchlistNotification(item: WatchlistItem, currentLevel: Aler
       content: {
         title: `👁️ ${item.placeName}`,
         body: `${LEVEL_EMOJI[currentLevel]} Now ${CROWD_LABELS[currentLevel]} — good time to go!`,
-        data: { locationId: item.placeId },
+        categoryIdentifier: WATCHLIST_CATEGORY_ID,
+        data: { locationId: item.placeId, notificationType: 'watchlist' },
       },
       trigger: null,
     });

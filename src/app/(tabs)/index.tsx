@@ -59,9 +59,15 @@ export default function HomeScreen() {
 
   useGeofencing([...savedLocationIds, ...recentLocationIds.slice(0, 5)], locations);
 
-  useNotificationResponse(async (locationId, level) => {
-    await submitReport(locationId, level);
-    onReportSubmitted();
+  useNotificationResponse({
+    onReport: async (locationId, level) => {
+      await submitReport(locationId, level);
+      onReportSubmitted();
+    },
+    onNavigate: (locationId) => {
+      addRecentLocation(locationId);
+      router.push(`/location/${locationId}`);
+    },
   });
 
   useEffect(() => {
