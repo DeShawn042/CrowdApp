@@ -10,10 +10,16 @@
     "ios": {
       "icon": "./assets/icon.png",
       "bundleIdentifier": "com.prescout.app",
+      "usesAppleSignIn": true,
       "infoPlist": {
         "NSLocationWhenInUseUsageDescription": "Prescout uses your location to find nearby venues and calculate distances.",
         "NSLocationAlwaysAndWhenInUseUsageDescription": "Prescout monitors your location in the background to notify you when you arrive at a saved venue so you can report the crowd level.",
-        "UIBackgroundModes": ["location", "fetch", "remote-notification"]
+        "NSFaceIDUsageDescription": "Prescout uses Face ID to let you sign in quickly and securely.",
+        "UIBackgroundModes": [
+          "location",
+          "fetch",
+          "remote-notification"
+        ]
       }
     },
     "android": {
@@ -66,7 +72,10 @@
           "locationAlwaysAndWhenInUsePermission": "Prescout uses your location in the background to notify you when you arrive at a saved venue.",
           "locationWhenInUsePermission": "Prescout uses your location to find nearby venues and show distances."
         }
-      ]
+      ],
+      "@react-native-google-signin/google-signin",
+      "expo-apple-authentication",
+      "expo-local-authentication"
     ],
     "experiments": {
       "typedRoutes": true,

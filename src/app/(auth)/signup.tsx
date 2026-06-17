@@ -15,25 +15,27 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import SocialAuthButtons from '@/components/SocialAuthButtons';
 import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import { useAuth } from '@/context/AuthContext';
 
-const LOGO_DARK = require('../../../assets/prescout-logo-dark.png');
+const LOGO_DARK  = require('../../../assets/prescout-logo-dark.png');
 const LOGO_LIGHT = require('../../../assets/prescout-logo-light.png');
 
 export default function SignupScreen() {
-  const { signup } = useAuth();
+  const { signup, loginWithApple, loginWithGoogle } = useAuth();
   const { colors, preference } = useTheme();
   const systemScheme = useColorScheme();
   const isDark = preference === 'dark' || (preference === 'system' && systemScheme === 'dark');
   const logoSource = isDark ? LOGO_DARK : LOGO_LIGHT;
-  const [name, setName] = useState('');
-  const [email, setEmail] = useState('');
+
+  const [name,     setName]     = useState('');
+  const [email,    setEmail]    = useState('');
   const [password, setPassword] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [focused, setFocused] = useState<string | null>(null);
+  const [loading,  setLoading]  = useState(false);
+  const [error,    setError]    = useState('');
+  const [focused,  setFocused]  = useState<string | null>(null);
 
   async function handleSignup() {
     if (!name.trim() || !email.trim() || !password.trim()) {
@@ -60,10 +62,25 @@ export default function SignupScreen() {
     }
   }
 
-  const inputStyle = (field: string) => [
-    styles.input,
-    focused === field && styles.inputFocused,
-  ];
+  async function handleApple() {
+    setError('');
+    try {
+      await loginWithApple();
+      router.replace('/(tabs)');
+    } catch (e: any) {
+      if (e.message !== 'CANCELLED') setError(e.message ?? 'Apple Sign-In failed.');
+    }
+  }
+
+  async function handleGoogle() {
+    setError('');
+    try {
+      await loginWithGoogle();
+      router.replace('/(tabs)');
+    } catch (e: any) {
+      if (e.message !== 'CANCELLED') setError(e.message ?? 'Google Sign-In failed.');
+    }
+  }
 
   return (
     <SafeAreaView style={[styles.safe, { backgroundColor: colors.bg }]}>
@@ -79,78 +96,82 @@ export default function SignupScreen() {
           </Pressable>
 
           <View style={styles.header}>
-            <Image
-              source={logoSource}
-              style={styles.logoImg}
-              resizeMode="contain"
-            />
+            <Image source={logoSource} style={styles.logoImg} resizeMode="contain" />
           </View>
 
           <View style={styles.formWrap}>
-          <View style={styles.form}>
-            {error ? <Text style={[styles.error, { color: COLORS.packed, backgroundColor: COLORS.packed + '1A' }]}>{error}</Text> : null}
+            <View style={styles.form}>
+              {error ? (
+                <Text style={[styles.error, { color: COLORS.packed, backgroundColor: COLORS.packed + '1A' }]}>{error}</Text>
+              ) : null}
 
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSec }]}>Full Name</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'name' && styles.inputFocused]}
-                value={name}
-                onChangeText={setName}
-                placeholder="Jane Smith"
-                placeholderTextColor={COLORS.textMuted}
-                autoCapitalize="words"
-                onFocus={() => setFocused('name')}
-                onBlur={() => setFocused(null)}
-              />
-            </View>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textSec }]}>Full Name</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'name' && styles.inputFocused]}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Jane Smith"
+                  placeholderTextColor={COLORS.textMuted}
+                  autoCapitalize="words"
+                  onFocus={() => setFocused('name')}
+                  onBlur={() => setFocused(null)}
+                />
+              </View>
 
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSec }]}>Email</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'email' && styles.inputFocused]}
-                value={email}
-                onChangeText={setEmail}
-                placeholder="you@example.com"
-                placeholderTextColor={COLORS.textMuted}
-                autoCapitalize="none"
-                keyboardType="email-address"
-                onFocus={() => setFocused('email')}
-                onBlur={() => setFocused(null)}
-              />
-            </View>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textSec }]}>Email</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'email' && styles.inputFocused]}
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@example.com"
+                  placeholderTextColor={COLORS.textMuted}
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  onFocus={() => setFocused('email')}
+                  onBlur={() => setFocused(null)}
+                />
+              </View>
 
-            <View style={styles.field}>
-              <Text style={[styles.label, { color: colors.textSec }]}>Password</Text>
-              <TextInput
-                style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'pass' && styles.inputFocused]}
-                value={password}
-                onChangeText={setPassword}
-                placeholder="Min. 6 characters"
-                placeholderTextColor={COLORS.textMuted}
-                secureTextEntry
-                onFocus={() => setFocused('pass')}
-                onBlur={() => setFocused(null)}
-              />
-            </View>
+              <View style={styles.field}>
+                <Text style={[styles.label, { color: colors.textSec }]}>Password</Text>
+                <TextInput
+                  style={[styles.input, { backgroundColor: colors.inputBg, borderColor: colors.inputBorder, color: colors.text }, focused === 'pass' && styles.inputFocused]}
+                  value={password}
+                  onChangeText={setPassword}
+                  placeholder="Min. 6 characters"
+                  placeholderTextColor={COLORS.textMuted}
+                  secureTextEntry
+                  onFocus={() => setFocused('pass')}
+                  onBlur={() => setFocused(null)}
+                />
+              </View>
 
-            <Pressable
-              style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
-              onPress={handleSignup}
-              disabled={loading}>
-              {loading ? (
-                <ActivityIndicator color={COLORS.text} />
-              ) : (
-                <Text style={styles.buttonText}>Create Account</Text>
-              )}
-            </Pressable>
-
-            <View style={styles.loginRow}>
-              <Text style={[styles.loginText, { color: colors.textSec }]}>Already have an account?</Text>
-              <Pressable onPress={() => router.replace('/(auth)/login')}>
-                <Text style={styles.loginLink}> Log in</Text>
+              <Pressable
+                style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]}
+                onPress={handleSignup}
+                disabled={loading}>
+                {loading ? (
+                  <ActivityIndicator color="#fff" />
+                ) : (
+                  <Text style={styles.buttonText}>Create Account</Text>
+                )}
               </Pressable>
+
+              <SocialAuthButtons
+                onApple={handleApple}
+                onGoogle={handleGoogle}
+                disabled={loading}
+              />
+
+              <View style={styles.loginRow}>
+                <Text style={[styles.loginText, { color: colors.textSec }]}>Already have an account?</Text>
+                <Pressable onPress={() => router.replace('/(auth)/login')}>
+                  <Text style={styles.loginLink}> Log in</Text>
+                </Pressable>
+              </View>
             </View>
-          </View>
           </View>
         </ScrollView>
       </KeyboardAvoidingView>
@@ -159,42 +180,24 @@ export default function SignupScreen() {
 }
 
 const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg },
-  flex: { flex: 1 },
-  container: { flexGrow: 1, paddingTop: 24, paddingBottom: 40, gap: 32 },
-  formWrap:  { paddingHorizontal: 24 },
-  backBtn: { alignSelf: 'flex-start', paddingHorizontal: 24 },
-  backText: { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
-  header: { alignSelf: 'center' },
-  logoImg: {
-    width: Dimensions.get('window').width,
-    height: 250,
-    alignSelf: 'center',
-  },
-  form: { gap: 16 },
-  error: { color: COLORS.packed, backgroundColor: COLORS.packed + '1A', padding: 12, borderRadius: 14, fontSize: 14 },
-  field: { gap: 6 },
-  label: { color: COLORS.textSec, fontSize: 12, fontWeight: '500' },
-  input: {
-    backgroundColor: COLORS.inputBg,
-    borderWidth: 1,
-    borderColor: COLORS.inputBorder,
-    borderRadius: 12,
-    padding: 14,
-    color: COLORS.text,
-    fontSize: 16,
-  },
-  inputFocused: { borderColor: COLORS.primary },
-  button: {
-    backgroundColor: COLORS.primary,
-    borderRadius: 14,
-    padding: 16,
-    alignItems: 'center',
-    marginTop: 8,
-  },
+  safe:          { flex: 1 },
+  flex:          { flex: 1 },
+  container:     { flexGrow: 1, paddingTop: 24, paddingBottom: 40, gap: 32 },
+  formWrap:      { paddingHorizontal: 24 },
+  backBtn:       { alignSelf: 'flex-start', paddingHorizontal: 24 },
+  backText:      { color: COLORS.primary, fontSize: 18, fontWeight: '500' },
+  header:        { alignSelf: 'center' },
+  logoImg:       { width: Dimensions.get('window').width, height: 250, alignSelf: 'center' },
+  form:          { gap: 16 },
+  error:         { padding: 12, borderRadius: 14, fontSize: 14 },
+  field:         { gap: 6 },
+  label:         { fontSize: 12, fontWeight: '500' },
+  input:         { borderWidth: 1, borderRadius: 12, padding: 14, fontSize: 16 },
+  inputFocused:  { borderColor: COLORS.primary },
+  button:        { backgroundColor: COLORS.primary, borderRadius: 14, padding: 16, alignItems: 'center', marginTop: 8 },
   buttonPressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
-  buttonText: { color: COLORS.text, fontSize: 16, fontWeight: '600' },
-  loginRow: { flexDirection: 'row', justifyContent: 'center' },
-  loginText: { color: COLORS.textSec, fontSize: 14 },
-  loginLink: { color: COLORS.primary, fontSize: 14, fontWeight: '600' },
+  buttonText:    { color: '#fff', fontSize: 16, fontWeight: '600' },
+  loginRow:      { flexDirection: 'row', justifyContent: 'center' },
+  loginText:     { fontSize: 14 },
+  loginLink:     { color: COLORS.primary, fontSize: 14, fontWeight: '600' },
 });

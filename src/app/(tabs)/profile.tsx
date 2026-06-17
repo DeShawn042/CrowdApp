@@ -23,6 +23,12 @@ import { useWatchlist } from '@/hooks/useWatchlist';
 import { useMyReviews, type MyReview } from '@/hooks/useMyReviews';
 import { useImpactStats, type ImpactStats } from '@/hooks/useImpactStats';
 import { useMapOpener } from '@/hooks/useMapOpener';
+import {
+  checkBiometricAvailability,
+  getBiometricEnabled,
+  setBiometricEnabled,
+  authenticateWithBiometric,
+} from '@/hooks/useBiometric';
 import { formatDate } from '@/utils/crowdUtils';
 
 const APP_VERSION = Constants.expoConfig?.version ?? '1.0.0';
@@ -41,6 +47,28 @@ export default function ProfileScreen() {
 
   const mapOpener = useMapOpener();
   const [mapDropdownOpen, setMapDropdownOpen] = useState(false);
+
+  const [biometricAvailable, setBiometricAvailable] = useState(false);
+  const [biometricLabel,     setBiometricLabel]     = useState('Biometrics');
+  const [biometricEnabled,   setBiometricEnabledState] = useState(false);
+
+  useFocusEffect(useCallback(() => {
+    checkBiometricAvailability().then(({ available, label }) => {
+      setBiometricAvailable(available);
+      setBiometricLabel(label);
+    });
+    getBiometricEnabled().then(setBiometricEnabledState);
+  }, []));
+
+  async function handleBiometricToggle(enable: boolean) {
+    if (enable) {
+      // Require a successful auth before enabling
+      const success = await authenticateWithBiometric(`Confirm ${biometricLabel} to enable it`);
+      if (!success) return;
+    }
+    await setBiometricEnabled(enable);
+    setBiometricEnabledState(enable);
+  }
 
   const [modal, setModal] = useState<'logout' | 'delete' | null>(null);
   const [deletingReviewId, setDeletingReviewId] = useState<string | null>(null);
@@ -211,6 +239,29 @@ export default function ProfileScreen() {
             </View>
           )}
         </View>
+
+        {/* Security */}
+        {biometricAvailable && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Security</Text>
+            <View style={[styles.linkList, { overflow: 'hidden' }]}>
+              <View style={styles.linkRow}>
+                <Text style={styles.linkIcon}>🔒</Text>
+                <View style={{ flex: 1 }}>
+                  <Text style={[styles.linkText, { color: colors.text }]}>{biometricLabel}</Text>
+                  <Text style={[styles.linkText, { color: colors.textMuted, fontSize: 12, fontWeight: '400' }]}>
+                    Sign in without a password
+                  </Text>
+                </View>
+                <Pressable
+                  onPress={() => handleBiometricToggle(!biometricEnabled)}
+                  style={[styles.toggle, biometricEnabled && styles.toggleOn]}>
+                  <View style={[styles.toggleThumb, biometricEnabled && styles.toggleThumbOn]} />
+                </Pressable>
+              </View>
+            </View>
+          </View>
+        )}
 
         {/* Watchlist */}
         {watchlistItems.length > 0 && (
@@ -501,6 +552,10 @@ function makeStyles(c: AppColors) {
     themeLabel:       { color: c.textSec, fontSize: 12, fontWeight: '600' },
     themeLabelActive: { color: COLORS.primary },
     themeCheck:       { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
+    toggle:           { width: 48, height: 28, borderRadius: 14, backgroundColor: c.border, justifyContent: 'center', paddingHorizontal: 2 },
+    toggleOn:         { backgroundColor: COLORS.primary },
+    toggleThumb:      { width: 24, height: 24, borderRadius: 12, backgroundColor: '#fff', shadowColor: '#000', shadowOpacity: 0.15, shadowRadius: 2, elevation: 2 },
+    toggleThumbOn:    { alignSelf: 'flex-end' },
     mapPrefCard:      { backgroundColor: c.card, borderRadius: 16, borderWidth: 1, borderColor: c.border, overflow: 'hidden' },
     mapPrefRow:       { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 14, gap: 12 },
     mapPrefIcon:      { fontSize: 20 },
