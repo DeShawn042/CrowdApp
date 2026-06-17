@@ -7,9 +7,11 @@ import type { Location as AppLocation } from '@/data/mockData';
 
 const GEOFENCE_TASK = 'CROWDAPP_GEOFENCE';
 const GEOFENCE_RADIUS_M = 150;
+const NOTIFY_COOLDOWN_MS = 30 * 60 * 1000; // 30 minutes
 
-// Module-level cache: place id → name, updated by the hook at runtime
+// Module-level caches — persist for the lifetime of the JS context
 const locationNameCache = new Map<string, string>();
+const lastNotifiedAt    = new Map<string, number>(); // placeId → timestamp
 
 // Must be defined at module level — runs before app mounts
 if (Platform.OS !== 'web') {
@@ -20,8 +22,12 @@ if (Platform.OS !== 'web') {
     }
     const { eventType, region } = data;
     if (eventType === Location.GeofencingEventType.Enter && region.identifier) {
-      const name = locationNameCache.get(region.identifier) ?? 'a saved location';
-      await sendArrivalNotification(name, region.identifier);
+      const placeId = region.identifier;
+      const last = lastNotifiedAt.get(placeId) ?? 0;
+      if (Date.now() - last < NOTIFY_COOLDOWN_MS) return; // already notified recently
+      lastNotifiedAt.set(placeId, Date.now());
+      const name = locationNameCache.get(placeId) ?? 'a saved location';
+      await sendArrivalNotification(name, placeId);
     }
   });
 }

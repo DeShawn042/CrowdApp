@@ -1,6 +1,6 @@
 import { Redirect, Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import { View } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import { AuthProvider, useAuth } from '@/context/AuthContext';
 import { AppProvider } from '@/context/AppContext';
 import { ThemeProvider, useTheme } from '@/context/ThemeContext';
@@ -11,22 +11,22 @@ function ThemedStack() {
   const { checked, hasSeenIt } = useOnboarding();
   const { isAuthenticated, isLoading: authLoading } = useAuth();
 
-  // Wait for both AsyncStorage and auth session to resolve
-  if (!checked || authLoading) {
-    return <View style={{ flex: 1, backgroundColor: colors.bg }} />;
-  }
+  const isReady = checked && !authLoading;
 
-  // Priority 1: logged in → home (no onboarding, no login)
-  // Priority 2: logged out + seen onboarding → login
-  // Priority 3: logged out + not seen onboarding → onboarding
-  const redirect = isAuthenticated
-    ? <Redirect href="/(tabs)/" />
-    : !hasSeenIt
-      ? <Redirect href="/onboarding" />
-      : <Redirect href="/(auth)/login" />;
+  // Determine the initial redirect only once loading is complete
+  const redirect = isReady
+    ? isAuthenticated
+      ? <Redirect href="/(tabs)/" />
+      : !hasSeenIt
+        ? <Redirect href="/onboarding" />
+        : <Redirect href="/(auth)/login" />
+    : null;
 
+  // Keep the Stack always mounted so it never unmounts/remounts on resume.
+  // The loading overlay sits on top until auth + onboarding are resolved,
+  // preventing a black-screen flash during state transitions.
   return (
-    <>
+    <View style={[styles.root, { backgroundColor: colors.bg }]}>
       <StatusBar style={colors.statusBar} />
       <Stack screenOptions={{ headerShown: false, contentStyle: { backgroundColor: colors.bg } }}>
         <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'fade' }} />
@@ -49,10 +49,20 @@ function ThemedStack() {
           options={{ headerShown: false, presentation: 'modal', animation: 'slide_from_bottom' }}
         />
       </Stack>
+
+      {/* Overlay masks the empty Stack while auth/onboarding are loading */}
+      {!isReady && (
+        <View style={[StyleSheet.absoluteFillObject, { backgroundColor: colors.bg }]} />
+      )}
+
       {redirect}
-    </>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  root: { flex: 1 },
+});
 
 export default function RootLayout() {
   return (

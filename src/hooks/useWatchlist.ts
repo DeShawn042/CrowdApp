@@ -29,6 +29,10 @@ const EXPIRY_MS        = 24 * 60 * 60 * 1000; // 24 hours
 const POLL_INTERVAL_MS = 15 * 60 * 1000;       // 15 minutes
 const NOTIFY_COOLDOWN  = 30 * 60 * 1000;       // 30 min between notifications
 
+// Module-level guard so concurrent poll calls can't both slip through the
+// stale-closure check on `item.notifiedAt` before the DB update lands.
+const inMemorySentAt = new Map<string, number>(); // placeId → timestamp
+
 const LEVEL_ORDER: Record<AlertLevel, number> = {
   empty: 0, light: 1, moderate: 2, packed: 3,
 };
@@ -87,7 +91,10 @@ export function useWatchlist() {
     const cutoff = new Date(now - 60 * 60 * 1000).toISOString(); // last hour
 
     for (const item of items) {
-      // Skip if notified recently
+      // Skip if notified recently — check in-memory first (guards against
+      // concurrent poll calls racing before the DB update lands), then DB value.
+      const memSent = inMemorySentAt.get(item.placeId) ?? 0;
+      if (now - memSent < NOTIFY_COOLDOWN) continue;
       if (item.notifiedAt) {
         const lastNotify = new Date(item.notifiedAt).getTime();
         if (now - lastNotify < NOTIFY_COOLDOWN) continue;
@@ -110,6 +117,8 @@ export function useWatchlist() {
 
       // Notify if current level <= alert threshold (e.g. alert on 'light', notify at 'empty' or 'light')
       if (LEVEL_ORDER[currentLevel] <= LEVEL_ORDER[item.alertLevel]) {
+        // Stamp in-memory immediately so any concurrent poll call is blocked
+        inMemorySentAt.set(item.placeId, now);
         await sendWatchlistNotification(item, currentLevel);
         await supabase
           .from('watchlist')
