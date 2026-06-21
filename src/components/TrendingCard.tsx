@@ -4,7 +4,7 @@ import { COLORS } from '@/constants/crowdColors';
 import { useTheme } from '@/context/ThemeContext';
 import { TrendingLocation } from '@/hooks/useTrending';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
-import { CROWD_COLORS, CROWD_LABELS } from '@/utils/crowdUtils';
+import { CROWD_COLORS, CROWD_LABELS, computeIsOpenNow } from '@/utils/crowdUtils';
 import LocationPhoto from '@/components/LocationPhoto';
 
 interface Props {
@@ -19,6 +19,7 @@ export default function TrendingCard({ location, rank, onPress, showRank = true,
   const { colors } = useTheme();
   const crowdColor = CROWD_COLORS[location.currentCrowd];
   const photoUrl   = usePlacesPhoto(location);
+  const isOpen     = computeIsOpenNow(location.openHour, location.closeHour, location.openNow);
 
   return (
     <Pressable
@@ -45,10 +46,16 @@ export default function TrendingCard({ location, rank, onPress, showRank = true,
 
       <Text style={[styles.name, { color: colors.text }]} numberOfLines={2}>{location.name}</Text>
 
-      <View style={[styles.crowdPill, { backgroundColor: crowdColor + '20', borderColor: crowdColor + '60' }]}>
-        <View style={[styles.dot, { backgroundColor: crowdColor }]} />
-        <Text style={[styles.crowdText, { color: crowdColor }]}>{CROWD_LABELS[location.currentCrowd]}</Text>
-      </View>
+      {isOpen ? (
+        <View style={[styles.crowdPill, { backgroundColor: crowdColor + '20', borderColor: crowdColor + '60' }]}>
+          <View style={[styles.dot, { backgroundColor: crowdColor }]} />
+          <Text style={[styles.crowdText, { color: crowdColor }]}>{CROWD_LABELS[location.currentCrowd]}</Text>
+        </View>
+      ) : (
+        <View style={[styles.crowdPill, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+          <Text style={[styles.crowdText, { color: colors.textMuted }]}>Closed</Text>
+        </View>
+      )}
 
       <Text style={[styles.reports, { color: colors.textMuted }]}>
         {location.recentReports > 0 ? `${location.recentReports} reports` : `⭐ ${location.rating}`}

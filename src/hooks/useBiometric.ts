@@ -1,7 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
-export const BIOMETRIC_PREF_KEY = 'prescout_biometric_enabled';
+export const BIOMETRIC_PREF_KEY   = 'prescout_biometric_enabled';
+export const BIOMETRIC_ASKED_KEY  = 'prescout_biometric_asked';
 
 export interface BiometricAvailability {
   available: boolean;
@@ -35,6 +36,15 @@ export async function getBiometricEnabled(): Promise<boolean> {
 
 export async function setBiometricEnabled(enabled: boolean): Promise<void> {
   await AsyncStorage.setItem(BIOMETRIC_PREF_KEY, String(enabled));
+}
+
+export async function getBiometricAsked(): Promise<boolean> {
+  const val = await AsyncStorage.getItem(BIOMETRIC_ASKED_KEY);
+  return val === 'true';
+}
+
+export async function setBiometricAsked(): Promise<void> {
+  await AsyncStorage.setItem(BIOMETRIC_ASKED_KEY, 'true');
 }
 
 export async function authenticateWithBiometric(promptMessage?: string): Promise<boolean> {

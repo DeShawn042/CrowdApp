@@ -26,7 +26,7 @@ import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
 import { requestNotificationPermission, setupNotificationCategories, useNotificationResponse } from '@/hooks/useNotifications';
 import { useTrending } from '@/hooks/useTrending';
-import { getCrowdDisplay } from '@/utils/crowdUtils';
+import { getCrowdDisplay, computeIsOpenNow } from '@/utils/crowdUtils';
 import type { TrendingLocation } from '@/hooks/useTrending';
 
 const WATCHLIST_HOME_LIMIT = 5;
@@ -145,6 +145,7 @@ export default function HomeScreen() {
                 const reports  = getReportsForLocation(item.placeId);
                 const display  = loc ? getCrowdDisplay(loc, reports) : null;
                 const crowd    = display?.level ?? loc?.currentCrowd ?? null;
+                const isOpen   = loc ? computeIsOpenNow(loc.openHour, loc.closeHour, loc.openNow) : true;
 
                 return (
                   <WatchlistHomeCard
@@ -152,6 +153,7 @@ export default function HomeScreen() {
                     item={item}
                     currentCrowd={crowd}
                     locationType={loc?.type}
+                    isOpen={isOpen}
                     onPress={() => handleLocationPress(item.placeId)}
                     onRemove={removeFromWatchlist}
                   />

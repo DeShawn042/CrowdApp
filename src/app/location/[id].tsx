@@ -146,8 +146,9 @@ export default function LocationDetailScreen() {
   if (!location) return null; // shouldn't reach here
 
   const crowdDisplay = getCrowdDisplay(location, reports);
-  const crowdColor = crowdDisplay.level ? CROWD_COLORS[crowdDisplay.level] : '#4B5563';
-  const crowdBg    = crowdDisplay.level ? CROWD_BG_COLORS[crowdDisplay.level] : '#1A1A22';
+  const crowdColor   = crowdDisplay.level ? CROWD_COLORS[crowdDisplay.level] : '#4B5563';
+  const crowdBg      = crowdDisplay.level ? CROWD_BG_COLORS[crowdDisplay.level] : '#1A1A22';
+  const isClosed     = crowdDisplay.source === 'closed';
 
   async function handleHeadingThere() {
     if (!location) return;
@@ -331,16 +332,23 @@ export default function LocationDetailScreen() {
         )}
 
         {/* Report button */}
-        <Pressable
-          style={({ pressed }) => [styles.reportBtn, pressed && styles.reportBtnPressed]}
-          onPress={() => router.push(`/submit/${id}`)}>
-          <Text style={styles.reportBtnIcon}>📊</Text>
-          <Text style={styles.reportBtnText}>Report crowd level</Text>
-          <Text style={styles.reportBtnArrow}>›</Text>
-        </Pressable>
+        {isClosed ? (
+          <View style={styles.reportBtnDisabled}>
+            <Text style={styles.reportBtnIcon}>📊</Text>
+            <Text style={[styles.reportBtnText, { color: colors.textMuted }]}>Reporting unavailable while closed</Text>
+          </View>
+        ) : (
+          <Pressable
+            style={({ pressed }) => [styles.reportBtn, pressed && styles.reportBtnPressed]}
+            onPress={() => router.push(`/submit/${id}`)}>
+            <Text style={styles.reportBtnIcon}>📊</Text>
+            <Text style={styles.reportBtnText}>Report crowd level</Text>
+            <Text style={styles.reportBtnArrow}>›</Text>
+          </Pressable>
+        )}
 
-        {/* Quick Reports — hidden for categories with no applicable report types */}
-        {qrConfigs != null && (
+        {/* Quick Reports — hidden for closed locations and categories with no applicable report types */}
+        {!isClosed && qrConfigs != null && (
           <QuickReportsSection
             configs={qrConfigs}
             aggregated={quickReports.aggregated}
@@ -650,7 +658,8 @@ function makeStyles(c: AppColors) { return StyleSheet.create({
   crowdMeter:      { flexDirection: 'row', gap: 3 },
   meterSegment:    { flex: 1, height: 8, opacity: 0.35 },
   meterActive:     { opacity: 1 },
-  reportBtn:       { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '50' },
+  reportBtn:         { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: COLORS.primary + '50' },
+  reportBtnDisabled: { backgroundColor: c.card, borderRadius: 16, padding: 16, flexDirection: 'row', alignItems: 'center', gap: 12, borderWidth: 1, borderColor: c.border, opacity: 0.6 },
   reportBtnPressed: { opacity: 0.75, transform: [{ scale: 0.98 }] },
   reportBtnIcon:   { fontSize: 22 },
   reportBtnText:   { flex: 1, color: COLORS.primary, fontSize: 16, fontWeight: '600' },

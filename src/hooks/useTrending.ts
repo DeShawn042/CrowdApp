@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Location } from '@/data/mockData';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { computeIsOpenNow } from '@/utils/crowdUtils';
 
 const WINDOW_MS  = 60 * 60 * 1000; // 60 minutes of active reports
 const REFRESH_MS =  5 * 60 * 1000; // re-check every 5 minutes
@@ -21,7 +22,12 @@ export function useTrending(locations: Location[]) {
     if (!isSupabaseConfigured) {
       setTrending(
         [...locations]
-          .sort((a, b) => b.rating - a.rating)
+          .sort((a, b) => {
+            const aOpen = computeIsOpenNow(a.openHour, a.closeHour, a.openNow) ? 0 : 1;
+            const bOpen = computeIsOpenNow(b.openHour, b.closeHour, b.openNow) ? 0 : 1;
+            if (aOpen !== bOpen) return aOpen - bOpen;
+            return b.rating - a.rating;
+          })
           .slice(0, MAX)
           .map(l => ({ ...l, recentReports: 0 })),
       );
@@ -80,7 +86,14 @@ export function useTrending(locations: Location[]) {
         .slice(0, needed)
         .map(l => ({ ...l, recentReports: 0 }));
 
-      setTrending([...byReports, ...fillers]);
+      const combined = [...byReports, ...fillers];
+      // Open locations appear before closed ones, preserving relative order within each group
+      combined.sort((a, b) => {
+        const aOpen = computeIsOpenNow(a.openHour, a.closeHour, a.openNow) ? 0 : 1;
+        const bOpen = computeIsOpenNow(b.openHour, b.closeHour, b.openNow) ? 0 : 1;
+        return aOpen - bOpen;
+      });
+      setTrending(combined);
       setLastRefresh(new Date());
     } catch (err) {
       console.warn('useTrending:', err);

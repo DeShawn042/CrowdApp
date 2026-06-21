@@ -7,7 +7,6 @@ import {
   authenticateWithBiometric,
   checkBiometricAvailability,
   getBiometricEnabled,
-  setBiometricEnabled,
 } from '@/hooks/useBiometric';
 
 const ONBOARDING_KEY = 'prescout_has_seen_onboarding';
@@ -249,7 +248,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   // ── Logout / delete ───────────────────────────────────────────
   const logout = useCallback(async () => {
-    await setBiometricEnabled(false); // clear biometric gate on explicit logout
     if (isSupabaseConfigured) await supabase.auth.signOut();
     setUser(null);
     setCurrentUser(null, null);

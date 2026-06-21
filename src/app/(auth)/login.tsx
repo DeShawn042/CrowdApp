@@ -23,7 +23,8 @@ import { useAuth } from '@/context/AuthContext';
 import {
   authenticateWithBiometric,
   checkBiometricAvailability,
-  getBiometricEnabled,
+  getBiometricAsked,
+  setBiometricAsked,
   setBiometricEnabled,
 } from '@/hooks/useBiometric';
 
@@ -65,8 +66,11 @@ export default function LoginScreen() {
 
   async function offerBiometricEnrollment() {
     const { available, label } = await checkBiometricAvailability();
-    const alreadyEnabled = await getBiometricEnabled();
-    if (!available || alreadyEnabled) return;
+    if (!available) return;
+    const alreadyAsked = await getBiometricAsked();
+    if (alreadyAsked) return;
+    // Mark as asked before showing the alert so it never appears again
+    await setBiometricAsked();
     Alert.alert(
       `Enable ${label}?`,
       `Sign in faster next time using ${label}.`,

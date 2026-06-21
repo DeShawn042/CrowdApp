@@ -13,6 +13,7 @@ interface Props {
   item: WatchlistItem;
   currentCrowd: CrowdLevel | null;
   locationType?: LocationType;
+  isOpen?: boolean;
   onPress: () => void;
   onRemove: (id: string) => void;
 }
@@ -26,13 +27,13 @@ function timeRemaining(expiresAt: string): string {
   return `${hrs}h left`;
 }
 
-export default function WatchlistHomeCard({ item, currentCrowd, locationType, onPress, onRemove }: Props) {
+export default function WatchlistHomeCard({ item, currentCrowd, locationType, isOpen = true, onPress, onRemove }: Props) {
   const { colors } = useTheme();
   const styles = makeStyles(colors);
   const [confirming, setConfirming] = useState(false);
 
-  const crowdColor = currentCrowd ? CROWD_COLORS[currentCrowd] : colors.border;
-  const crowdLabel = currentCrowd ? CROWD_LABELS[currentCrowd] : 'No data';
+  const crowdColor = isOpen ? (currentCrowd ? CROWD_COLORS[currentCrowd] : colors.border) : colors.border;
+  const crowdLabel = isOpen ? (currentCrowd ? CROWD_LABELS[currentCrowd] : 'No data') : 'Closed';
 
   return (
     <>
