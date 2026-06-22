@@ -32,6 +32,7 @@ import { useHeadingThere } from '@/hooks/useHeadingThere';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { getQuickReportConfigs } from '@/utils/quickReportConfig';
 import type { QuickReportConfig, ReportType } from '@/utils/quickReportConfig';
+import { usePrescoutHourly } from '@/hooks/usePrescoutHourly';
 import QuickReportSheet from '@/components/QuickReportSheet';
 import { useTheme } from '@/context/ThemeContext';
 import type { AppColors } from '@/constants/themes';
@@ -95,6 +96,7 @@ export default function LocationDetailScreen() {
   const quickReports = useQuickReports(id ?? '');
   const { destination, setHeadingThere, clearDestination, isHeadingThere } = useHeadingThere();
   const { addToWatchlist, removeFromWatchlist, isWatching } = useWatchlist();
+  const prescoutHourlyData = usePrescoutHourly(id ?? '');
 
   const mapOpener = useMapOpener();
 
@@ -385,6 +387,7 @@ export default function LocationDetailScreen() {
           }
           openHour={location.openHour}
           closeHour={location.closeHour}
+          prescoutHourlyData={prescoutHourlyData}
         />
 
         {/* Recent reports */}

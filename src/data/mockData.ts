@@ -1,7 +1,7 @@
 export type CrowdLevel = 'empty' | 'light' | 'moderate' | 'packed';
 export type LocationType =
   | 'gym' | 'bar' | 'restaurant' | 'cafe'
-  | 'shopping' | 'entertainment' | 'spa' | 'gas_station'
+  | 'shopping' | 'grocery' | 'entertainment' | 'spa' | 'gas_station'
   | 'medical' | 'park' | 'hotel' | 'transit' | 'airport' | 'other';
 
 export interface Review {

@@ -79,6 +79,12 @@ interface Props {
   openHour?: number;
   /** Venue close hour. > 23 = next day (24 = midnight, 26 = 2 AM…). */
   closeHour?: number;
+  /**
+   * Prescout historical crowd levels keyed by hour (0–23).
+   * Only present for hours with ≥10 reports for today's day-of-week.
+   * These overlay the Google base bars for those specific hours.
+   */
+  prescoutHourlyData?: Partial<Record<number, CrowdLevel>>;
 }
 
 export default function BusyTimesChart({
@@ -88,6 +94,7 @@ export default function BusyTimesChart({
   googleLivePct,
   openHour,
   closeHour,
+  prescoutHourlyData,
 }: Props) {
   const { colors } = useTheme();
   const { width: screenW } = useWindowDimensions();
@@ -147,9 +154,11 @@ export default function BusyTimesChart({
     ? '24 hours'
     : `${fmtSubHour(start)} – ${fmtSubHour(end)}${end > 24 ? ' (next day)' : ''}`;
 
+  const hasPrescoutHistorical = prescoutHourlyData && Object.keys(prescoutHourlyData).length > 0;
   const sourceLabel =
     dataSource === 'prescout' ? 'Prescout Live'
     : dataSource === 'google' ? 'Google Live'
+    : hasPrescoutHistorical ? 'Google + Prescout blended'
     : 'Typical pattern';
 
   const styles = makeStyles(colors);
@@ -168,20 +177,31 @@ export default function BusyTimesChart({
           contentContainerStyle={styles.scrollContent}>
 
           {hours.map((rawHour, i) => {
+            const hour  = rawHour % 24;
             const val   = barValue(rawHour, data);
             const pct   = val / maxVal;
             const level = busyLevelFromPercent(val);
             const color = CROWD_COLORS[level];
             const isNow = i === nowIdx;
 
+            // Prescout historical level for this specific hour (if ≥10 reports)
+            const prescoutHistLevel = prescoutHourlyData?.[hour];
+            const hasPrescoutHist   = !!prescoutHistLevel && !isNow; // live takes over current hour
+
             const typH = Math.max(pct * CHART_H, val > 0 ? 3 : 0);
 
-            // Typical bar is always rendered; dim it when a live source is active
-            const typOpacity = isNow
-              ? (dataSource !== 'typical' ? 0.14 : 0.90)
-              : (val === 0 ? 0.08 : 0.28);
+            // Typical bar dims when any overlay is active for this hour
+            const hasOverlay = isNow ? dataSource !== 'typical' : hasPrescoutHist;
+            const typOpacity = hasOverlay
+              ? 0.14
+              : val === 0 ? 0.08 : 0.28;
 
-            // Heights for the two live-source overlays
+            // Prescout historical overlay height (past hours)
+            const prescoutHistH = hasPrescoutHist
+              ? Math.max((LIVE_PCT[prescoutHistLevel] / 100) * CHART_H, 4)
+              : 0;
+
+            // Current-hour live-source heights
             const prescoutH = liveCrowd
               ? Math.max((LIVE_PCT[liveCrowd] / 100) * CHART_H, 4)
               : 0;
@@ -222,7 +242,7 @@ export default function BusyTimesChart({
                     />
                   )}
 
-                  {/* ① Typical (historical) bar — always present */}
+                  {/* ① Google base (typical) bar — always present */}
                   <View
                     style={[
                       styles.bar,
@@ -230,7 +250,17 @@ export default function BusyTimesChart({
                     ]}
                   />
 
-                  {/* ② Prescout Live overlay (priority 1) */}
+                  {/* ② Prescout historical overlay (past hours with ≥10 reports) */}
+                  {hasPrescoutHist && (
+                    <View
+                      style={[
+                        styles.liveBar,
+                        { height: prescoutHistH, width: barW - 6, backgroundColor: PRESCOUT_COLOR, opacity: 0.85 },
+                      ]}
+                    />
+                  )}
+
+                  {/* ③ Prescout Live overlay (current hour, priority 1) */}
                   {isNow && liveCrowd && (
                     <View
                       style={[
@@ -240,7 +270,7 @@ export default function BusyTimesChart({
                     />
                   )}
 
-                  {/* ③ Google Live overlay (priority 2 — only when no Prescout data) */}
+                  {/* ④ Google Live overlay (current hour, priority 2 — only when no Prescout data) */}
                   {isNow && googleLivePct != null && !liveCrowd && (
                     <View
                       style={[
@@ -250,7 +280,7 @@ export default function BusyTimesChart({
                     />
                   )}
 
-                  {/* Dot above the active live bar */}
+                  {/* Dot above active live bar (current hour) */}
                   {isNow && liveCrowd && (
                     <View style={[styles.liveDot, { bottom: prescoutH + 5, backgroundColor: PRESCOUT_COLOR }]} />
                   )}
@@ -306,7 +336,17 @@ export default function BusyTimesChart({
           </View>
         )}
 
-        {/* Prescout Live — shown when Supabase reports are active */}
+        {/* Prescout historical overlay — shown when we have hourly historical data */}
+        {hasPrescoutHistorical && !liveCrowd && (
+          <View style={styles.legendItem}>
+            <View style={[styles.legendDot, { backgroundColor: PRESCOUT_COLOR }]} />
+            <Text style={[styles.legendText, { color: PRESCOUT_COLOR, fontWeight: '600' }]}>
+              Prescout Typical
+            </Text>
+          </View>
+        )}
+
+        {/* Prescout Live — shown when Supabase crowd_reports are active */}
         {liveCrowd && (
           <View style={styles.legendItem}>
             <View style={[styles.legendDot, { backgroundColor: PRESCOUT_COLOR }]} />

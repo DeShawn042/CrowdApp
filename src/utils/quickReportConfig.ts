@@ -11,7 +11,8 @@ export type ReportType =
   | 'wait_time'
   | 'security_line'
   | 'tsa_precheck'
-  | 'baggage_dropoff';
+  | 'baggage_dropoff'
+  | 'checkout_lines';
 
 export interface QuickReportConfig {
   type: ReportType;
@@ -82,6 +83,13 @@ const WAIT_TIME: QuickReportConfig = {
   options: ['No wait', 'Under 15 min', '15–30 min', '30–45 min', '45+ min'],
 };
 
+// ─── Grocery-specific configs ────────────────────────────────────────────────
+
+const CHECKOUT_LINES: QuickReportConfig = {
+  type: 'checkout_lines', icon: '🛒', label: 'Checkout Lines',
+  options: ['Just self-checkout', '1–2 lanes open', '3–5 lanes open', '6+ lanes open'],
+};
+
 // ─── Airport-specific configs ────────────────────────────────────────────────
 
 const SECURITY_LINE: QuickReportConfig = {
@@ -108,6 +116,7 @@ const CATEGORY_MAP: Record<LocationType, QuickReportConfig[] | null> = {
   entertainment: [VIBE_ENTERTAINMENT, EVENT_ENTERTAINMENT],
   gym:           [CLEANLINESS],
   shopping:      [PARKING],
+  grocery:       [CHECKOUT_LINES, PARKING],
   spa:           [WAIT_TIME, SERVICE_FULL],
   medical:       [WAIT_TIME, SERVICE_FULL],
   gas_station:   null,
@@ -136,10 +145,11 @@ export const REPORT_TYPE_ICONS: Record<ReportType, string> = {
   security_line:   '🔵',
   tsa_precheck:    '✅',
   baggage_dropoff: '🧳',
+  checkout_lines:  '🛒',
 };
 
 export const ALL_REPORT_TYPES: ReportType[] = [
   'vibe', 'price', 'service', 'event',
   'cover_charge', 'parking', 'cleanliness', 'wait_time',
-  'security_line', 'tsa_precheck', 'baggage_dropoff',
+  'security_line', 'tsa_precheck', 'baggage_dropoff', 'checkout_lines',
 ];

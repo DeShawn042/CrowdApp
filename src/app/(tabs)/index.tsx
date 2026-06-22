@@ -40,7 +40,7 @@ function getGreeting() {
 
 export default function HomeScreen() {
   const { user } = useAuth();
-  const { locations, savedLocationIds, recentLocationIds, addRecentLocation, submitReport, getLocationById, getReportsForLocation, toggleSaved, refreshData, refreshLoading } = useAppContext();
+  const { locations, savedLocationIds, addRecentLocation, submitReport, getLocationById, getReportsForLocation, toggleSaved, refreshData, refreshLoading } = useAppContext();
   const [removingFav, setRemovingFav] = useState<{ id: string; name: string } | null>(null);
 
   const { trending, loading: trendingLoading } = useTrending(locations);
@@ -57,7 +57,8 @@ export default function HomeScreen() {
 
   const isLive = trending.some(t => t.recentReports > 0);
 
-  useGeofencing([...savedLocationIds, ...recentLocationIds.slice(0, 5)], locations);
+  const watchlistPlaceIds = watchlistItems.map(w => w.placeId);
+  useGeofencing(destination?.placeId ?? null, watchlistPlaceIds, locations, user?.id);
 
   useNotificationResponse({
     onReport: async (locationId, level) => {

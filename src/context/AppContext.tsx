@@ -356,6 +356,26 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (error) return;
 
         console.log('submitReport: ✅ insert succeeded, refreshing...');
+
+        // Save to historical_reports (fire-and-forget — never expires)
+        const now = new Date();
+        const DAYS = ['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+        const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+        const month = now.getMonth(); // 0-based
+        const season = month <= 1 || month === 11 ? 'Winter'
+          : month <= 4 ? 'Spring'
+          : month <= 7 ? 'Summer'
+          : 'Fall';
+        supabase.from('historical_reports').insert({
+          location_id:  locationId,
+          crowd_level:  level,
+          hour:         now.getHours(),
+          day_of_week:  DAYS[now.getDay()],
+          month:        MONTHS[month],
+          season,
+          year:         now.getFullYear(),
+        }).then(() => {}).catch(() => {});
+
         await loadRecentReports();
         await loadMyReports(userId);
       } catch (err) {
