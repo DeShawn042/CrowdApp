@@ -191,9 +191,9 @@ export default function BusyTimesChart({
             const typH = Math.max(pct * CHART_H, val > 0 ? 3 : 0);
 
             // Typical bar dims when any overlay is active for this hour
-            const hasOverlay = isNow ? dataSource !== 'typical' : hasPrescoutHist;
-            const typOpacity = hasOverlay
-              ? 0.14
+            const typOpacity = hasPrescoutHist
+              ? 0
+              : isNow && dataSource !== 'typical' ? 0.14
               : val === 0 ? 0.08 : 0.28;
 
             // Prescout historical overlay height (past hours)
