@@ -1,5 +1,5 @@
 import { router, useFocusEffect } from 'expo-router';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useRef, useState } from 'react';
 import { Linking, Platform, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 // Platform still used for device info in openContactSupport
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -11,6 +11,9 @@ import LocationPhoto from '@/components/LocationPhoto';
 import StarRating from '@/components/StarRating';
 import Toast from '@/components/Toast';
 import WatchlistCard from '@/components/WatchlistCard';
+import LevelProgress from '@/components/LevelProgress';
+import BadgeGrid from '@/components/BadgeGrid';
+import PointsToast, { PointsToastRef } from '@/components/PointsToast';
 import { usePlacesPhoto } from '@/hooks/usePlacesPhoto';
 import type { Location } from '@/data/mockData';
 import { COLORS } from '@/constants/crowdColors';
@@ -22,6 +25,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useWatchlist } from '@/hooks/useWatchlist';
 import { useMyReviews, type MyReview } from '@/hooks/useMyReviews';
 import { useImpactStats, type ImpactStats } from '@/hooks/useImpactStats';
+import { useGamification } from '@/hooks/useGamification';
 import { useMapOpener } from '@/hooks/useMapOpener';
 import {
   checkBiometricAvailability,
@@ -44,6 +48,9 @@ export default function ProfileScreen() {
   const { items: watchlistItems, removeFromWatchlist, renewWatchlistItem, reload: reloadWatchlist } = useWatchlist();
   const { reviews: myReviews, deleteMyReview, refresh: reloadMyReviews } = useMyReviews();
   const { stats, refresh: reloadStats } = useImpactStats();
+
+  const { data: gData, levelInfo, load: reloadGamification } = useGamification();
+  const pointsToastRef = useRef<PointsToastRef>(null);
 
   const mapOpener = useMapOpener();
   const [mapDropdownOpen, setMapDropdownOpen] = useState(false);
@@ -80,7 +87,8 @@ export default function ProfileScreen() {
     reloadWatchlist();
     reloadMyReviews();
     reloadStats();
-  }, [reloadWatchlist, reloadMyReviews, reloadStats]));
+    reloadGamification();
+  }, [reloadWatchlist, reloadMyReviews, reloadStats, reloadGamification]));
 
   const initials = (user?.name ?? 'U')
     .split(' ')
@@ -113,6 +121,11 @@ export default function ProfileScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
+      {/* Points toast — floats above content */}
+      <View style={{ position: 'relative' }}>
+        <PointsToast ref={pointsToastRef} />
+      </View>
+
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
 
         {/* Header */}
@@ -130,14 +143,48 @@ export default function ProfileScreen() {
           </View>
           <View style={styles.userInfo}>
             <Text style={styles.userName}>{user?.name}</Text>
+            <View style={styles.levelInline}>
+              <Text style={styles.levelInlineIcon}>{levelInfo.current.icon}</Text>
+              <Text style={[styles.levelInlineName, { color: levelInfo.current.color }]}>{levelInfo.current.name}</Text>
+            </View>
             <Text style={styles.userEmail}>{user?.email}</Text>
             <Text style={styles.joinDate}>Member since {user?.joinDate}</Text>
           </View>
         </View>
 
+        {/* Level & Points */}
+        <LevelProgress
+          levelInfo={levelInfo}
+          totalPoints={gData.totalPoints}
+          weeklyPoints={gData.weeklyPoints}
+        />
+
+        {/* Streak */}
+        {gData.currentStreak > 0 && (
+          <View style={[styles.streakCard, { backgroundColor: colors.card, borderColor: colors.border }]}>
+            <Text style={styles.streakEmoji}>{gData.currentStreak >= 7 ? '🔥' : '📅'}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={[styles.streakTitle, { color: colors.text }]}>
+                {gData.currentStreak} day streak!
+              </Text>
+              <Text style={[styles.streakSub, { color: colors.textMuted }]}>
+                {gData.currentStreak >= 7
+                  ? 'Dedicated reporter — keep it up!'
+                  : `${7 - gData.currentStreak} more days for 🔥 +50 pts bonus`}
+              </Text>
+            </View>
+            <Text style={[styles.streakBest, { color: colors.textMuted }]}>Best: {gData.longestStreak}</Text>
+          </View>
+        )}
+
         {/* Your Impact */}
         <View style={styles.impactCard}>
-          <Text style={styles.impactTitle}>📊 Your Contributions</Text>
+          <Text style={styles.impactTitle}>📊 Your Impact</Text>
+          {gData.peopleHelped > 0 && (
+            <Text style={[styles.helpedBanner, { color: colors.primary }]}>
+              Your reports have helped {gData.peopleHelped.toLocaleString()} {gData.peopleHelped === 1 ? 'person' : 'people'}
+            </Text>
+          )}
           <View style={styles.impactGrid}>
             {IMPACT_TILES.map(tile => (
               <View key={tile.key} style={styles.impactTile}>
@@ -146,7 +193,21 @@ export default function ProfileScreen() {
                 <Text style={styles.impactLabel}>{tile.label}</Text>
               </View>
             ))}
+            <View style={styles.impactTile}>
+              <Text style={styles.impactIcon}>🏴</Text>
+              <Text style={styles.impactNum}>{gData.pioneerCount}</Text>
+              <Text style={styles.impactLabel}>Pioneer{'\n'}Locations</Text>
+            </View>
           </View>
+        </View>
+
+        {/* Badges */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>🎖️ Badges</Text>
+          <Text style={[styles.badgeSubtitle, { color: colors.textMuted }]}>
+            {gData.earnedBadgeIds.size} of 12 earned
+          </Text>
+          <BadgeGrid earnedIds={gData.earnedBadgeIds} />
         </View>
 
         {/* Favorites */}
@@ -530,9 +591,21 @@ function makeStyles(c: AppColors) {
     userName:         { color: c.text, fontSize: 16, fontWeight: '600' },
     userEmail:        { color: c.textSec, fontSize: 12 },
     joinDate:         { color: c.textMuted, fontSize: 12, marginTop: 4 },
+    levelInline:      { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 1 },
+    levelInlineIcon:  { fontSize: 14 },
+    levelInlineName:  { fontSize: 12, fontWeight: '600' },
+    // Streak card
+    streakCard:       { flexDirection: 'row', alignItems: 'center', gap: 12, borderRadius: 16, borderWidth: 1, padding: 14 },
+    streakEmoji:      { fontSize: 28 },
+    streakTitle:      { fontSize: 15, fontWeight: '700' },
+    streakSub:        { fontSize: 11, marginTop: 2 },
+    streakBest:       { fontSize: 11 },
+    // Badges
+    badgeSubtitle:    { fontSize: 12, marginTop: -8 },
     // Impact card
     impactCard:       { backgroundColor: c.card, borderRadius: 16, padding: 16, gap: 14, borderWidth: 1, borderColor: c.border },
     impactTitle:      { color: c.text, fontSize: 16, fontWeight: '700' },
+    helpedBanner:     { fontSize: 13, fontWeight: '600', textAlign: 'center' },
     impactGrid:       { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     impactTile:       { flex: 1, minWidth: '28%', backgroundColor: c.surface, borderRadius: 14, padding: 12, alignItems: 'center', gap: 4, borderWidth: 1, borderColor: c.border },
     impactIcon:       { fontSize: 22 },

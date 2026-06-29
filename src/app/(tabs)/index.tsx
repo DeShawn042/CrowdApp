@@ -15,6 +15,7 @@ import HeadingThereCard from '@/components/HeadingThereCard';
 import TrendingCard from '@/components/TrendingCard';
 import WatchlistHomeCard from '@/components/WatchlistHomeCard';
 import RateAppModal from '@/components/RateAppModal';
+import Leaderboard from '@/components/Leaderboard';
 import { COLORS } from '@/constants/crowdColors';
 import { useAppContext } from '@/context/AppContext';
 import { useAuth } from '@/context/AuthContext';
@@ -250,6 +251,11 @@ export default function HomeScreen() {
                   ))}
                 </ScrollView>
               )}
+            </View>
+
+            {/* Weekly Leaderboard */}
+            <View style={styles.section}>
+              <Leaderboard />
             </View>
           </>
         )}

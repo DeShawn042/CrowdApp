@@ -79,6 +79,15 @@ export default function LocationDetailScreen() {
     }
   }, [id]); // intentionally only depends on id — we only need one attempt per navigation
 
+  useEffect(() => {
+    // Record a location view to credit crowd reporters (people_helped counter)
+    if (id) {
+      import('@/lib/supabase').then(({ supabase, isSupabaseConfigured: cfg }) => {
+        if (cfg) supabase.rpc('record_location_view', { p_location_id: id }).then(() => {}).catch(() => {});
+      });
+    }
+  }, [id]);
+
   // ── Hooks that must run unconditionally ──────────────────────
   const reports = getReportsForLocation(id ?? '');
   const isSaved = savedLocationIds.includes(id ?? '');

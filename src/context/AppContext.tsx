@@ -5,6 +5,7 @@ import { useAuth } from '@/context/AuthContext';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { searchNearby } from '@/utils/googlePlaces';
 import { averageReports, busyLevelFromPercent } from '@/utils/crowdUtils';
+import { POINTS } from '@/constants/gamification';
 
 interface UserLocation {
   lat: number;
@@ -356,6 +357,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (error) return;
 
         console.log('submitReport: ✅ insert succeeded, refreshing...');
+
+        // Check pioneer bonus (first ever report for this location)
+        let isPioneer = false;
+        try {
+          const { count } = await supabase
+            .from('crowd_reports')
+            .select('*', { count: 'exact', head: true })
+            .eq('location_id', locationId)
+            .eq('is_flagged_user', false);
+          isPioneer = (count ?? 0) <= 1; // this insert just happened, so <=1 means first
+        } catch {}
+
+        // Award crowd report points server-side
+        const basePoints = POINTS.CROWD_REPORT + (isPioneer ? POINTS.PIONEER_BONUS : 0);
+        supabase.rpc('award_gamification_points', {
+          p_points:     basePoints,
+          p_is_report:  true,
+          p_is_pioneer: isPioneer,
+        }).then(() => {}).catch(() => {});
 
         // Save to historical_reports (fire-and-forget — never expires)
         const now = new Date();

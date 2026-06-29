@@ -169,6 +169,13 @@ export function useNotificationResponse(callbacks: {
     const isDefaultTap = actionId === Notifications.DEFAULT_ACTION_IDENTIFIER;
 
     if (isDefaultTap || actionId === 'view_location' || actionId === 'im_here' || actionId === 'report_now') {
+      // Award Heading There arrival points when "I'm Here" is tapped
+      if (actionId === 'im_here' && data.notificationType === 'heading_there') {
+        import('@/lib/supabase').then(({ supabase }) => {
+          supabase.rpc('award_gamification_points', { p_points: 15, p_is_report: false, p_is_pioneer: false })
+            .then(() => {}).catch(() => {});
+        });
+      }
       callbackRef.current.onNavigate(locationId);
     } else if (CROWD_LEVELS.has(actionId)) {
       callbackRef.current.onReport(locationId, actionId as CrowdLevel);

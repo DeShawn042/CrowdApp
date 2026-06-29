@@ -123,6 +123,9 @@ export function useQuickReports(placeId: string) {
       expires_at:  expiresAt,
     });
     if (error) { console.error('useQuickReports.submit:', error.message); return false; }
+    // Award quick report points (fire-and-forget)
+    supabase.rpc('award_gamification_points', { p_points: 5, p_is_report: false, p_is_pioneer: false })
+      .then(() => {}).catch(() => {});
     await load();
     return true;
   }

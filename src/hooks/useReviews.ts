@@ -216,6 +216,17 @@ export function useReviews(locationId: string) {
 
       cache.delete(locationId);
       await fetchReviews();
+
+      // Award review points (fire-and-forget, only for new reviews not edits)
+      if (!isEdit) {
+        const hasPhotos = newPhotos.length > 0;
+        supabase.rpc('award_gamification_points', {
+          p_points:     hasPhotos ? 20 : 10,
+          p_is_report:  false,
+          p_is_pioneer: false,
+        }).then(() => {}).catch(() => {});
+      }
+
       return null;
     } catch (err: any) {
       return err.message ?? 'Failed to save review. Please try again.';
